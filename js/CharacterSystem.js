@@ -196,7 +196,7 @@ class CharacterSystem {
         return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     }
     
-    setState(characterId, newState) {
+    setState(characterId, newState, options = {}) {
         const character = this.characters.get(characterId);
         if (!character || character.state === newState) return;
         
@@ -207,6 +207,24 @@ class CharacterSystem {
         this.clearCharacterTweens(character);
         
         const config = this.animationConfigs[newState];
+        
+        // Special handling for death state
+        if (newState === 'death') {
+            character.isDead = true;
+            character.canMove = false;
+            // Hide name tag for corpses (until reported)
+            character.nameTag.setVisible(false);
+        }
+        
+        // Special handling for ghost state
+        if (newState === 'ghost') {
+            character.isGhost = true;
+            character.canPhaseWalls = true;
+            character.canMove = true;
+            // Show name tag again for ghosts
+            character.nameTag.setVisible(true);
+            character.nameTag.setAlpha(0.7);
+        }
         
         // Update sprite texture and animation
         if (config.animation) {
@@ -408,6 +426,130 @@ class CharacterSystem {
     
     getAllCharacters() {
         return Array.from(this.characters.values());
+    }
+    
+    // Kill animation system
+    performKill(killerCharacterId, victimCharacterId, isLocalKiller = false) {
+        const killer = this.characters.get(killerCharacterId);
+        const victim = this.characters.get(victimCharacterId);
+        
+        if (!killer || !victim) return;
+        
+        // Only show kill animation to the killer
+        if (isLocalKiller) {
+            this.showKillAnimation(killer, victim);
+        }
+        
+        // Set victim to death state for all players
+        this.setState(victimCharacterId, 'death');
+        
+        // Create corpse marker
+        this.createCorpse(victim);
+        
+        return { killer, victim };
+    }
+    
+    showKillAnimation(killer, victim) {
+        // Create kill animation sprite at victim's position
+        const killSprite = this.scene.add.sprite(victim.sprite.x, victim.sprite.y, 'character_kill_animation');
+        killSprite.setScale(0.8);
+        
+        // Apply victim's color and accessories to the kill animation
+        killSprite.setTint(victim.color);
+        
+        // Copy victim's accessories to kill animation if they exist
+        let killHat = null;
+        let killPet = null;
+        
+        if (victim.hat) {
+            killHat = this.scene.add.image(killSprite.x, killSprite.y - 20, victim.hat.texture.key);
+            killHat.setScale(victim.hat.scaleX);
+            killHat.setTint(victim.hat.tint);
+        }
+        
+        if (victim.pet) {
+            killPet = this.scene.add.image(killSprite.x - 25, killSprite.y + 10, victim.pet.texture.key);
+            killPet.setScale(victim.pet.scaleX);
+            killPet.setTint(victim.pet.tint);
+        }
+        
+        // Play kill animation
+        killSprite.play('character_kill');
+        
+        // When animation completes, clean up
+        killSprite.once('animationcomplete', () => {
+            killSprite.destroy();
+            if (killHat) killHat.destroy();
+            if (killPet) killPet.destroy();
+        });
+        
+        // Hide victim during kill animation
+        victim.sprite.setVisible(false);
+        victim.nameTag.setVisible(false);
+        if (victim.hat) victim.hat.setVisible(false);
+        if (victim.pet) victim.pet.setVisible(false);
+        
+        // Show victim corpse after animation
+        this.scene.time.delayedCall(1000, () => {
+            this.setState(victim.id, 'death');
+            victim.sprite.setVisible(true);
+        });
+    }
+    
+    createCorpse(victim) {
+        // Store corpse data for reporting
+        const corpse = {
+            id: `corpse_${victim.id}`,
+            victimId: victim.id,
+            x: victim.sprite.x,
+            y: victim.sprite.y,
+            color: victim.color,
+            name: victim.name,
+            reported: false,
+            discoveredBy: null
+        };
+        
+        // Add to scene's corpse list
+        if (!this.scene.corpses) {
+            this.scene.corpses = [];
+        }
+        this.scene.corpses.push(corpse);
+        
+        return corpse;
+    }
+    
+    reportCorpse(corpseId, reporterId) {
+        if (!this.scene.corpses) return null;
+        
+        const corpse = this.scene.corpses.find(c => c.id === corpseId);
+        if (!corpse || corpse.reported) return null;
+        
+        corpse.reported = true;
+        corpse.discoveredBy = reporterId;
+        
+        // Show name tag again when corpse is reported
+        const victim = this.characters.get(corpse.victimId);
+        if (victim) {
+            victim.nameTag.setVisible(true);
+            victim.nameTag.setText(`${corpse.name} (DEAD)`);
+            victim.nameTag.setStyle({ fill: '#ff0000' });
+        }
+        
+        return corpse;
+    }
+    
+    convertToGhost(characterId) {
+        const character = this.characters.get(characterId);
+        if (!character) return;
+        
+        this.setState(characterId, 'ghost');
+        
+        // Ghost-specific properties
+        character.canPhaseWalls = true;
+        character.speed = 2.5; // Slightly faster
+        character.isGhost = true;
+        
+        return character;
     }
     
     // Utility method to get all available colors
