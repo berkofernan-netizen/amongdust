@@ -31,7 +31,8 @@ class AmongUsGame {
                 MainMenuScene,
                 SettingsScene,
                 LocalLobbyScene,
-                DropshipLobbyScene
+                DropshipLobbyScene,
+                MapScene
             ],
             input: {
                 keyboard: true,

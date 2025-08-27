@@ -147,7 +147,7 @@ class LocalLobbyScene extends Phaser.Scene {
             isLocal: isLocal,
             color: this.getRandomColor(),
             ready: false,
-            id: this.players.length
+            id: `player_${this.players.length}`
         };
         
         this.players.push(player);

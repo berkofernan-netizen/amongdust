@@ -92,13 +92,17 @@ class PreloadScene extends Phaser.Scene {
         this.load.image('chat_send', 'assets/ui/chat_send.png');
         this.load.image('shhh', 'assets/ui/shhh.png');
         
-        // Character sprites
+        // Character sprites (all should be grayscale for tinting)
         this.load.image('character_lobby', 'assets/character/lobby.png');
         this.load.image('character_idle', 'assets/character/idle.png');
         this.load.spritesheet('character_walk', 'assets/character/walk.png', { frameWidth: 64, frameHeight: 64 });
         this.load.image('character_death', 'assets/character/death.png');
         this.load.image('character_ghost', 'assets/character/ghost.png');
-        this.load.image('character_vent', 'assets/character/vent_player.png');
+        this.load.image('character_vent', 'assets/character/vent1.png');
+        this.load.image('character_vent_player', 'assets/character/vent_player.png');
+        this.load.image('character_vote_icon', 'assets/character/vote_icon.png');
+        this.load.image('character_ejected', 'assets/character/ejected.png');
+        this.load.spritesheet('character_kill_animation', 'assets/character/kill_animation.png', { frameWidth: 128, frameHeight: 128 });
         
         // Hat assets
         this.load.image('hat_eggscellent', 'assets/hats/Eggscellent.png');

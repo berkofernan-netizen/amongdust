@@ -591,9 +591,8 @@ class DropshipLobbyScene extends Phaser.Scene {
         
         // When video ends, start the actual game
         roleRevealVideo.on('complete', () => {
-            // TODO: Transition to main game scene
-            console.log('Role revealed! Starting main game...');
-            // this.scene.start('MainGameScene');
+            // Transition to map scene
+            this.scene.start('MapScene');
         });
     }
     
