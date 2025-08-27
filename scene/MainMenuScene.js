@@ -31,9 +31,8 @@ export default class MainMenuScene extends Phaser.Scene {
 
         // Play tıklama
         playBtn.on('pointerdown', () => {
-            console.log("Play clicked");
-            this.scene.start('LobbyScene'); // İleride Lobby sahnesi gelecek
-        });
+    this.scene.start('DropshipLobbyScene'); // doğru sahne
+});
 
         // Local tıklama
         localBtn.on('pointerdown', () => {
