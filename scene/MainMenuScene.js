@@ -18,11 +18,10 @@ export default class MainMenuScene extends Phaser.Scene {
     bgVideo.setDisplaySize(this.scale.width, this.scale.height);
     bgVideo.setDepth(-1);
 
-    // Kullanıcı dokununca oynat (autoplay engelini aşmak için)
-    this.input.once('pointerdown', () => {
-        bgVideo.play(true);
-        bgVideo.setLoop(true);
-    });
+    // Sessiz yap → autoplay için
+    bgVideo.setMute(true);
+    bgVideo.play(true);
+    bgVideo.setLoop(true);
 
     // Logo
     let logo = this.add.image(this.scale.width / 2, this.scale.height / 4, 'logo');
@@ -33,10 +32,8 @@ export default class MainMenuScene extends Phaser.Scene {
     let localBtn = this.add.image(this.scale.width / 2, this.scale.height / 2 + 80, 'localButton').setInteractive();
     let settingsBtn = this.add.image(this.scale.width / 2, this.scale.height / 2 + 160, 'settingsButton').setInteractive();
 
-    playBtn.on('pointerdown', () => {
-        this.scene.start('DropshipLobbyScene');
-    });
+    playBtn.on('pointerdown', () => this.scene.start('DropshipLobbyScene'));
     localBtn.on('pointerdown', () => console.log("Local clicked"));
     settingsBtn.on('pointerdown', () => console.log("Settings clicked"));
-    }
+        }
                                }
