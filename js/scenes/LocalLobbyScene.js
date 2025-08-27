@@ -4,6 +4,10 @@ class LocalLobbyScene extends Phaser.Scene {
         super({ key: 'LocalLobbyScene' });
         this.players = [];
         this.maxPlayers = 10;
+        this.playerCustomization = {
+            bodyColor: 0xff0000, // Default red
+            backpackColor: 0x800080 // Default purple
+        };
     }
     
     create() {
@@ -38,6 +42,9 @@ class LocalLobbyScene extends Phaser.Scene {
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold'
         });
+        
+        // Player customization area
+        this.createCustomizationArea();
         
         // Initialize with current player
         this.addPlayer(window.gameManager.getPlayerName(), true);
@@ -104,7 +111,7 @@ class LocalLobbyScene extends Phaser.Scene {
         });
         
         this.startBtn.on('pointerup', () => {
-            this.startGame();
+            this.goToDropship();
         });
         
         // Update players display
@@ -282,6 +289,161 @@ class LocalLobbyScene extends Phaser.Scene {
         // this.scene.start('GameScene');
     }
     
+    createCustomizationArea() {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        
+        // Customization panel (right side)
+        const customX = width - 300;
+        const customY = 120;
+        const customWidth = 250;
+        const customHeight = height - 300;
+        
+        this.customBg = this.add.graphics();
+        this.customBg.fillStyle(0x16213e, 0.8);
+        this.customBg.lineStyle(2, 0x0f4c75, 1);
+        this.customBg.fillRoundedRect(customX, customY, customWidth, customHeight, 10);
+        this.customBg.strokeRoundedRect(customX, customY, customWidth, customHeight, 10);
+        
+        // Customization title
+        this.add.text(customX + 20, customY + 20, 'Customize:', {
+            fontSize: '20px',
+            fill: '#ffffff',
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'bold'
+        });
+        
+        // Body color section
+        this.add.text(customX + 20, customY + 60, 'Body Color:', {
+            fontSize: '16px',
+            fill: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        });
+        
+        this.createColorPicker(customX + 20, customY + 85, 'body');
+        
+        // Backpack color section
+        this.add.text(customX + 20, customY + 160, 'Backpack Color:', {
+            fontSize: '16px',
+            fill: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        });
+        
+        this.createColorPicker(customX + 20, customY + 185, 'backpack');
+        
+        // Preview player
+        this.createPlayerPreview(customX + 125, customY + 280);
+    }
+    
+    createColorPicker(x, y, type) {
+        const colors = [
+            0xff0000, // Red
+            0x0000ff, // Blue
+            0x00ff00, // Green
+            0xff69b4, // Pink
+            0xffa500, // Orange
+            0xffff00, // Yellow
+            0x000000, // Black
+            0xffffff, // White
+            0x800080, // Purple
+            0x00ffff  // Cyan
+        ];
+        
+        colors.forEach((color, index) => {
+            const colorX = x + (index % 5) * 35;
+            const colorY = y + Math.floor(index / 5) * 35;
+            
+            const colorCircle = this.add.circle(colorX + 15, colorY + 15, 12, color)
+                .setInteractive()
+                .setStrokeStyle(2, 0xffffff);
+            
+            if (color === 0x000000) {
+                colorCircle.setStrokeStyle(3, 0xffffff);
+            }
+            
+            // Highlight selected color
+            if ((type === 'body' && color === this.playerCustomization.bodyColor) ||
+                (type === 'backpack' && color === this.playerCustomization.backpackColor)) {
+                colorCircle.setStrokeStyle(4, 0x00ff00);
+            }
+            
+            colorCircle.on('pointerup', () => {
+                this.selectColor(type, color);
+            });
+        });
+    }
+    
+    selectColor(type, color) {
+        if (type === 'body') {
+            this.playerCustomization.bodyColor = color;
+        } else if (type === 'backpack') {
+            this.playerCustomization.backpackColor = color;
+        }
+        
+        // Update the local player's appearance
+        const localPlayer = this.players.find(p => p.isLocal);
+        if (localPlayer) {
+            localPlayer.color = this.playerCustomization.bodyColor;
+        }
+        
+        // Recreate customization area to update selected colors
+        this.customBg.destroy();
+        this.createCustomizationArea();
+        this.updatePlayersDisplay();
+    }
+    
+    createPlayerPreview(x, y) {
+        // Body
+        this.previewBody = this.add.circle(x, y, 20, this.playerCustomization.bodyColor);
+        if (this.playerCustomization.bodyColor === 0x000000) {
+            this.previewBody.setStrokeStyle(2, 0xffffff);
+        }
+        
+        // Backpack
+        this.previewBackpack = this.add.circle(x + 12, y - 8, 8, this.playerCustomization.backpackColor);
+        
+        // Name tag
+        this.previewName = this.add.text(x, y - 35, window.gameManager.getPlayerName(), {
+            fontSize: '12px',
+            fill: '#ffffff',
+            fontFamily: 'Arial, sans-serif',
+            backgroundColor: '#000000',
+            padding: { x: 4, y: 2 }
+        }).setOrigin(0.5);
+    }
+    
+    goToDropship() {
+        if (this.players.length < 4) {
+            // Show message that we need at least 4 players to start
+            const warningText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'Need at least 4 players to start!', {
+                fontSize: '24px',
+                fill: '#ff0000',
+                fontFamily: 'Arial, sans-serif',
+                backgroundColor: '#000000',
+                padding: { x: 20, y: 10 }
+            }).setOrigin(0.5);
+            
+            this.tweens.add({
+                targets: warningText,
+                alpha: 0,
+                duration: 3000,
+                onComplete: () => {
+                    warningText.destroy();
+                }
+            });
+            
+            return;
+        }
+        
+        // Store player data and customization for the dropship
+        this.registry.set('players', this.players);
+        this.registry.set('localPlayer', this.players.find(p => p.isLocal));
+        this.registry.set('playerCustomization', this.playerCustomization);
+        
+        // Go to Dropship Lobby
+        this.scene.start('DropshipLobbyScene');
+    }
+
     update() {
         // Handle any real-time updates here
     }

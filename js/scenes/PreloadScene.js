@@ -55,6 +55,12 @@ class PreloadScene extends Phaser.Scene {
         this.load.video('defeat_imp', 'assets/defeat_imp.mp4');
         this.load.video('defeat_crew', 'assets/defeat_crew.mp4');
         
+        // Role reveal videos
+        this.load.video('crewmate_1imp', 'assets/roles/crewmate_1imp.mp4');
+        this.load.video('crewmate_2imp', 'assets/roles/crewmate_2imp.mp4');
+        this.load.video('crewmate_3imp', 'assets/roles/crewmate_3imp.mp4');
+        this.load.video('impostor_reveal', 'assets/roles/Impostor.mp4');
+        
         // Images
         this.load.image('logo', 'assets/logo.png');
         this.load.image('map', 'assets/map.png');
@@ -86,8 +92,27 @@ class PreloadScene extends Phaser.Scene {
         this.load.image('chat_send', 'assets/ui/chat_send.png');
         this.load.image('shhh', 'assets/ui/shhh.png');
         
+        // Character sprites
+        this.load.image('character_lobby', 'assets/character/lobby.png');
+        this.load.image('character_idle', 'assets/character/idle.png');
+        this.load.spritesheet('character_walk', 'assets/character/walk.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.image('character_death', 'assets/character/death.png');
+        this.load.image('character_ghost', 'assets/character/ghost.png');
+        this.load.image('character_vent', 'assets/character/vent_player.png');
+        
+        // Hat assets
+        this.load.image('hat_eggscellent', 'assets/hats/Eggscellent.png');
+        this.load.image('hat_gift_wrapped', 'assets/hats/Gift_Wrapped.png');
+        this.load.image('hat_knighted', 'assets/hats/Knighted.png');
+        this.load.image('hat_pompous', 'assets/hats/Pompous_Person.png');
+        this.load.image('hat_punkin', 'assets/hats/Punkin.png');
+        
+        // Skin assets
+        this.load.image('skin_flashy', 'assets/skins/Flashy.png');
+        this.load.image('skin_officer', 'assets/skins/Officer_Outfit.png');
+        this.load.image('skin_suited', 'assets/skins/Suited_Up.png');
+        
         // Character assets (we'll add more as needed)
-        this.loadCharacterAssets();
         this.loadEnvironmentAssets();
     }
     
