@@ -49,22 +49,25 @@ class DropshipLobbyScene extends Phaser.Scene {
         
         // Start with seating animation
         this.startSeatingAnimation();
+        
+        // Setup AI movement for bots
+        this.setupAIMovement();
     }
     
     setupDropshipBoundaries() {
         // Define collision boundaries for dropship interior
         // These prevent players from walking outside the ship
         this.dropshipBounds = [
-            // Outer boundaries (ship walls)
-            { x: 0, y: 0, width: 1280, height: 150 }, // Top boundary
-            { x: 0, y: 570, width: 1280, height: 150 }, // Bottom boundary
-            { x: 0, y: 0, width: 200, height: 720 }, // Left boundary
-            { x: 1080, y: 0, width: 200, height: 720 }, // Right boundary
+            // Outer boundaries (ship walls) - tighter bounds for dropship interior
+            { x: 0, y: 0, width: 1280, height: 200 }, // Top boundary
+            { x: 0, y: 520, width: 1280, height: 200 }, // Bottom boundary  
+            { x: 0, y: 0, width: 220, height: 720 }, // Left boundary
+            { x: 1060, y: 0, width: 220, height: 720 }, // Right boundary
             
-            // Internal ship structures
-            { x: 200, y: 150, width: 100, height: 100 }, // Left console
-            { x: 980, y: 150, width: 100, height: 100 }, // Right console
-            { x: 500, y: 200, width: 280, height: 50 }, // Central console
+            // Internal ship structures (consoles, equipment)
+            { x: 220, y: 200, width: 80, height: 60 }, // Left console
+            { x: 980, y: 200, width: 80, height: 60 }, // Right console
+            { x: 570, y: 180, width: 140, height: 40 }, // Central laptop area
         ];
     }
     
@@ -85,18 +88,19 @@ class DropshipLobbyScene extends Phaser.Scene {
     }
     
     initializeCharacters() {
-        // Define seat positions in the dropship
+        // Define seat positions in the dropship (dropship.png layout)
         const seatPositions = [
-            { x: 300, y: 400 }, // Left side seats
-            { x: 300, y: 500 },
-            { x: 980, y: 400 }, // Right side seats
-            { x: 980, y: 500 },
-            { x: 640, y: 350 }, // Center seats
-            { x: 640, y: 450 },
-            { x: 640, y: 550 },
-            { x: 450, y: 380 },
-            { x: 830, y: 380 },
-            { x: 640, y: 250 }
+            // Left side seats (2 rows)
+            { x: 280, y: 320 }, { x: 320, y: 320 }, { x: 360, y: 320 },
+            { x: 280, y: 420 }, { x: 320, y: 420 }, { x: 360, y: 420 },
+            
+            // Right side seats (2 rows)  
+            { x: 920, y: 320 }, { x: 960, y: 320 }, { x: 1000, y: 320 },
+            { x: 920, y: 420 }, { x: 960, y: 420 }, { x: 1000, y: 420 },
+            
+            // Center area seats
+            { x: 580, y: 280 }, { x: 640, y: 280 }, { x: 700, y: 280 },
+            { x: 580, y: 460 }, { x: 640, y: 460 }, { x: 700, y: 460 }
         ];
         
         this.characterSprites = [];
@@ -107,7 +111,7 @@ class DropshipLobbyScene extends Phaser.Scene {
                 
                 // Create character sprite (start with lobby.png - sitting position)
                 const character = this.add.sprite(pos.x, pos.y, 'character_lobby');
-                character.setScale(0.5);
+                character.setScale(0.6); // Slightly bigger for visibility
                 character.setTint(player.color);
                 
                 // Add player name tag
@@ -127,7 +131,10 @@ class DropshipLobbyScene extends Phaser.Scene {
                     isSeated: true,
                     isLocal: player.isLocal,
                     seatPosition: pos,
-                    currentPosition: { x: pos.x, y: pos.y }
+                    currentPosition: { x: pos.x, y: pos.y },
+                    direction: { x: 0, y: 0 },
+                    canMove: false,
+                    isWalking: false
                 };
                 
                 this.characterSprites.push(characterData);
@@ -152,11 +159,12 @@ class DropshipLobbyScene extends Phaser.Scene {
         this.characterSprites.forEach(charData => {
             charData.sprite.setTexture('character_idle');
             charData.isSeated = false;
+            charData.canMove = true; // Enable movement for all characters
             
             // Add subtle breathing animation for idle
             this.tweens.add({
                 targets: charData.sprite,
-                scaleY: 0.52,
+                scaleY: 0.65,
                 duration: 2000,
                 yoyo: true,
                 repeat: -1,
@@ -166,6 +174,47 @@ class DropshipLobbyScene extends Phaser.Scene {
         
         // Enable movement for local player
         this.localCharacter.canMove = true;
+    }
+    
+    setupAIMovement() {
+        // Setup AI behavior for non-local players
+        this.time.addEvent({
+            delay: 2000, // Every 2 seconds
+            callback: this.updateAIMovement,
+            callbackScope: this,
+            loop: true
+        });
+    }
+    
+    updateAIMovement() {
+        this.characterSprites.forEach(charData => {
+            // Skip local player and seated characters
+            if (charData.isLocal || charData.isSeated || !charData.canMove) return;
+            
+            // Random chance to change direction
+            if (Math.random() < 0.3) {
+                // Choose random direction
+                const angle = Math.random() * Math.PI * 2;
+                const newDirX = Math.cos(angle) * 1.5;
+                const newDirY = Math.sin(angle) * 1.5;
+                
+                // Test if this direction would cause collision
+                const testX = charData.sprite.x + newDirX * 15;
+                const testY = charData.sprite.y + newDirY * 15;
+                
+                if (!this.checkDropshipCollision(testX, testY, charData.sprite)) {
+                    charData.direction = { x: newDirX, y: newDirY };
+                } else {
+                    // If collision, stop
+                    charData.direction = { x: 0, y: 0 };
+                }
+                
+                // Sometimes stop moving
+                if (Math.random() < 0.4) {
+                    charData.direction = { x: 0, y: 0 };
+                }
+            }
+        });
     }
     
     createMobileJoystick() {
@@ -643,8 +692,47 @@ class DropshipLobbyScene extends Phaser.Scene {
             this.handleKeyboardMovement();
         }
         
+        // Move AI characters
+        this.moveAICharacters();
+        
         // Check if player is near laptop for Use button
         this.checkLaptopProximity();
+    }
+    
+    moveAICharacters() {
+        this.characterSprites.forEach(charData => {
+            // Skip local player and non-moving characters
+            if (charData.isLocal || !charData.canMove || charData.isSeated) return;
+            
+            if (charData.direction.x !== 0 || charData.direction.y !== 0) {
+                const speed = 1.5;
+                const newX = charData.sprite.x + charData.direction.x * speed;
+                const newY = charData.sprite.y + charData.direction.y * speed;
+                
+                // Check collision before moving
+                if (!this.checkDropshipCollision(newX, newY, charData.sprite)) {
+                    charData.sprite.x = newX;
+                    charData.sprite.y = newY;
+                    charData.nameTag.x = newX;
+                    charData.nameTag.y = newY - 40;
+                    
+                    // Switch to walking animation
+                    if (!charData.isWalking) {
+                        charData.sprite.setTexture('character_walk');
+                        charData.isWalking = true;
+                    }
+                } else {
+                    // Stop if collision
+                    charData.direction = { x: 0, y: 0 };
+                }
+            } else {
+                // Switch to idle if not moving
+                if (charData.isWalking) {
+                    charData.sprite.setTexture('character_idle');
+                    charData.isWalking = false;
+                }
+            }
+        });
     }
     
     handleKeyboardMovement() {
