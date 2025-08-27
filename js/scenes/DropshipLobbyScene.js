@@ -44,8 +44,44 @@ class DropshipLobbyScene extends Phaser.Scene {
         // Setup input controls
         this.setupControls();
         
+        // Setup dropship boundaries
+        this.setupDropshipBoundaries();
+        
         // Start with seating animation
         this.startSeatingAnimation();
+    }
+    
+    setupDropshipBoundaries() {
+        // Define collision boundaries for dropship interior
+        // These prevent players from walking outside the ship
+        this.dropshipBounds = [
+            // Outer boundaries (ship walls)
+            { x: 0, y: 0, width: 1280, height: 150 }, // Top boundary
+            { x: 0, y: 570, width: 1280, height: 150 }, // Bottom boundary
+            { x: 0, y: 0, width: 200, height: 720 }, // Left boundary
+            { x: 1080, y: 0, width: 200, height: 720 }, // Right boundary
+            
+            // Internal ship structures
+            { x: 200, y: 150, width: 100, height: 100 }, // Left console
+            { x: 980, y: 150, width: 100, height: 100 }, // Right console
+            { x: 500, y: 200, width: 280, height: 50 }, // Central console
+        ];
+    }
+    
+    checkDropshipCollision(x, y, sprite, character = null) {
+        // Check if position would collide with dropship boundaries
+        const spriteWidth = sprite.width * sprite.scaleX;
+        const spriteHeight = sprite.height * sprite.scaleY;
+        
+        for (let bound of this.dropshipBounds) {
+            if (x - spriteWidth/2 < bound.x + bound.width &&
+                x + spriteWidth/2 > bound.x &&
+                y - spriteHeight/2 < bound.y + bound.height &&
+                y + spriteHeight/2 > bound.y) {
+                return true; // Collision detected
+            }
+        }
+        return false; // No collision
     }
     
     initializeCharacters() {
@@ -244,16 +280,22 @@ class DropshipLobbyScene extends Phaser.Scene {
             const normalizedX = deltaX / length;
             const normalizedY = deltaY / length;
             
-            // Update character position
-            this.localCharacter.sprite.x += normalizedX * speed;
-            this.localCharacter.sprite.y += normalizedY * speed;
+            // Calculate new position
+            const newX = this.localCharacter.sprite.x + normalizedX * speed;
+            const newY = this.localCharacter.sprite.y + normalizedY * speed;
             
-            // Update name tag position
-            this.localCharacter.nameTag.x = this.localCharacter.sprite.x;
-            this.localCharacter.nameTag.y = this.localCharacter.sprite.y - 40;
-            
-            // Switch to walking animation if moving
-            if (speed > 0.5 && !this.localCharacter.isWalking) {
+            // Check collision before moving
+            if (!this.checkDropshipCollision(newX, newY, this.localCharacter.sprite)) {
+                // Update character position
+                this.localCharacter.sprite.x = newX;
+                this.localCharacter.sprite.y = newY;
+                
+                // Update name tag position
+                this.localCharacter.nameTag.x = newX;
+                this.localCharacter.nameTag.y = newY - 40;
+                
+                // Switch to walking animation if moving
+                if (speed > 0.5 && !this.localCharacter.isWalking) {
                 this.localCharacter.sprite.setTexture('character_walk');
                 this.localCharacter.isWalking = true;
                 
@@ -266,6 +308,7 @@ class DropshipLobbyScene extends Phaser.Scene {
                 });
                 
                 this.localCharacter.sprite.play('walk');
+                }
             }
         }
     }
@@ -482,20 +525,18 @@ class DropshipLobbyScene extends Phaser.Scene {
     }
     
     createStartGameButton(x, y) {
-        this.startGameBtn = this.add.text(x, y, 'START', {
-            fontSize: '24px',
-            fill: '#ffffff',
-            fontFamily: 'Arial, sans-serif',
-            backgroundColor: '#27ae60',
-            padding: { x: 30, y: 15 }
-        }).setInteractive().setOrigin(0.5);
+        this.startGameBtn = this.add.image(x, y, 'start_button');
+        this.startGameBtn.setScale(0.8);
+        this.startGameBtn.setInteractive();
         
         this.startGameBtn.on('pointerover', () => {
-            this.startGameBtn.setStyle({ backgroundColor: '#229954' });
+            this.startGameBtn.setScale(0.85);
+            this.startGameBtn.setTint(0xffff99);
         });
         
         this.startGameBtn.on('pointerout', () => {
-            this.startGameBtn.setStyle({ backgroundColor: '#27ae60' });
+            this.startGameBtn.setScale(0.8);
+            this.startGameBtn.clearTint();
         });
         
         this.startGameBtn.on('pointerup', () => {
@@ -609,26 +650,32 @@ class DropshipLobbyScene extends Phaser.Scene {
     handleKeyboardMovement() {
         const speed = 3;
         let moving = false;
+        let newX = this.localCharacter.sprite.x;
+        let newY = this.localCharacter.sprite.y;
         
         if (this.cursors.left.isDown || this.wasd.A.isDown) {
-            this.localCharacter.sprite.x -= speed;
-            this.localCharacter.nameTag.x -= speed;
+            newX -= speed;
             moving = true;
         }
         if (this.cursors.right.isDown || this.wasd.D.isDown) {
-            this.localCharacter.sprite.x += speed;
-            this.localCharacter.nameTag.x += speed;
+            newX += speed;
             moving = true;
         }
         if (this.cursors.up.isDown || this.wasd.W.isDown) {
-            this.localCharacter.sprite.y -= speed;
-            this.localCharacter.nameTag.y -= speed;
+            newY -= speed;
             moving = true;
         }
         if (this.cursors.down.isDown || this.wasd.S.isDown) {
-            this.localCharacter.sprite.y += speed;
-            this.localCharacter.nameTag.y += speed;
+            newY += speed;
             moving = true;
+        }
+        
+        // Check collision before moving
+        if (moving && !this.checkDropshipCollision(newX, newY, this.localCharacter.sprite)) {
+            this.localCharacter.sprite.x = newX;
+            this.localCharacter.sprite.y = newY;
+            this.localCharacter.nameTag.x = newX;
+            this.localCharacter.nameTag.y = newY - 40;
         }
         
         // Switch between walk and idle animations

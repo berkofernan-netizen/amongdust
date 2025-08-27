@@ -6,31 +6,31 @@ class CharacterSystem {
         this.animationConfigs = {
             idle: {
                 texture: 'character_idle',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: true
             },
             walk: {
                 texture: 'character_walk',
-                scale: 0.6,
+                scale: 0.8,
                 animation: 'character_walk',
                 breathing: false
             },
             vent: {
                 texture: 'character_vent',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: false
             },
             vent_player: {
                 texture: 'character_vent_player',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: false
             },
             ghost: {
                 texture: 'character_ghost',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: false,
                 alpha: 0.7,
@@ -38,31 +38,31 @@ class CharacterSystem {
             },
             lobby: {
                 texture: 'character_lobby',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: false
             },
             vote_icon: {
                 texture: 'character_vote_icon',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: false
             },
             death: {
                 texture: 'character_death',
-                scale: 0.8,
+                scale: 1.0,
                 animation: null,
                 breathing: false
             },
             ejected: {
                 texture: 'character_ejected',
-                scale: 0.6,
+                scale: 0.8,
                 animation: null,
                 breathing: false
             },
             kill_animation: {
                 texture: 'character_kill_animation',
-                scale: 0.8,
+                scale: 1.0,
                 animation: 'character_kill',
                 breathing: false,
                 oneTime: true
@@ -78,7 +78,7 @@ class CharacterSystem {
             this.scene.anims.create({
                 key: 'character_walk',
                 frames: this.scene.anims.generateFrameNumbers('character_walk', { start: 0, end: 3 }),
-                frameRate: 8,
+                frameRate: 12,
                 repeat: -1
             });
         }
