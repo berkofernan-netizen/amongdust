@@ -13,35 +13,30 @@ export default class MainMenuScene extends Phaser.Scene {
     }
 
     create() {
-        // Video arka plan
-        let bgVideo = this.add.video(this.scale.width / 2, this.scale.height / 2, 'introVideo');
-        bgVideo.setLoop(true);
+    // Video arka plan
+    let bgVideo = this.add.video(this.scale.width / 2, this.scale.height / 2, 'introVideo');
+    bgVideo.setDisplaySize(this.scale.width, this.scale.height);
+    bgVideo.setDepth(-1);
+
+    // Kullanıcı dokununca oynat (autoplay engelini aşmak için)
+    this.input.once('pointerdown', () => {
         bgVideo.play(true);
-        bgVideo.setDisplaySize(this.scale.width, this.scale.height);
-        bgVideo.setDepth(-1); // en arkada kalsın
+        bgVideo.setLoop(true);
+    });
 
-        // Logo
-        let logo = this.add.image(this.scale.width / 2, this.scale.height / 4, 'logo');
-        logo.setOrigin(0.5);
+    // Logo
+    let logo = this.add.image(this.scale.width / 2, this.scale.height / 4, 'logo');
+    logo.setOrigin(0.5);
 
-        // Butonlar
-        let playBtn = this.add.image(this.scale.width / 2, this.scale.height / 2, 'playButton').setInteractive();
-        let localBtn = this.add.image(this.scale.width / 2, this.scale.height / 2 + 80, 'localButton').setInteractive();
-        let settingsBtn = this.add.image(this.scale.width / 2, this.scale.height / 2 + 160, 'settingsButton').setInteractive();
+    // Butonlar
+    let playBtn = this.add.image(this.scale.width / 2, this.scale.height / 2, 'playButton').setInteractive();
+    let localBtn = this.add.image(this.scale.width / 2, this.scale.height / 2 + 80, 'localButton').setInteractive();
+    let settingsBtn = this.add.image(this.scale.width / 2, this.scale.height / 2 + 160, 'settingsButton').setInteractive();
 
-        // Play tıklama
-        playBtn.on('pointerdown', () => {
-    this.scene.start('DropshipLobbyScene'); // doğru sahne
-});
-
-        // Local tıklama
-        localBtn.on('pointerdown', () => {
-            console.log("Local clicked");
-        });
-
-        // Settings tıklama
-        settingsBtn.on('pointerdown', () => {
-            console.log("Settings clicked");
-        });
+    playBtn.on('pointerdown', () => {
+        this.scene.start('DropshipLobbyScene');
+    });
+    localBtn.on('pointerdown', () => console.log("Local clicked"));
+    settingsBtn.on('pointerdown', () => console.log("Settings clicked"));
     }
                                }
