@@ -28,6 +28,15 @@ export default class DropshipLobbyScene extends Phaser.Scene {
 this.load.image('hat1', 'assets/hats/hat1.png');
 this.load.image('hat2', 'assets/hats/hat2.png');
 this.load.image('hat3', 'assets/hats/hat3.png');
+        // Shhh animasyonu sprite sheet
+this.load.spritesheet('shhhAnim', 'assets/ui/shhh.png', {
+    frameWidth: 1280,  // senin shhh.png dosyasındaki tek kare genişliği
+    frameHeight: 720  // senin shhh.png dosyasındaki tek kare yüksekliği
+});
+
+// Role videoları (impostor ve crewmate farklı sayılara göre)
+this.load.video('crewmate2', 'assets/roles/crewmate_2imp.mp4');
+this.load.video('crewmate3', 'assets/roles/crewmate_3imp.mp4');
     }
 
     create() {
@@ -88,6 +97,12 @@ this.load.image('hat3', 'assets/hats/hat3.png');
     hat2Btn.on('pointerdown', () => this.setHat('hat2'));
     hat3Btn.on('pointerdown', () => this.setHat('hat3'));
 });
+   this.anims.create({
+    key: 'shhh_play',
+    frames: this.anims.generateFrameNumbers('shhhAnim', { start: 0, end: 3 }),
+    frameRate: 6,
+    repeat: 0
+});
     }
 
     showRoleReveal() {
@@ -127,5 +142,39 @@ update() {
         this.currentHat.x = this.player.x;
         this.currentHat.y = this.player.y - 50;
     }
+    showRoleReveal(impostorCount = 1) {
+    // Shhh animasyonu başlat
+    let shhh = this.add.sprite(this.scale.width/2, this.scale.height/2, 'shhhAnim');
+    shhh.setDisplaySize(this.scale.width, this.scale.height);
+    shhh.play('shhh_play');
+
+    // Animasyon bitince → role video
+    shhh.on('animationcomplete', () => {
+        shhh.destroy();
+        this.startRoleVideo(impostorCount);
+    });
+}
+
+startRoleVideo(impostorCount) {
+    let isImpostor = Math.random() < 0.2; // %20 impostor
+    let videoKey;
+
+    if (isImpostor) {
+        videoKey = 'impostor';
+    } else {
+        if (impostorCount === 1) videoKey = 'crewmate1';
+        else if (impostorCount === 2) videoKey = 'crewmate2';
+        else if (impostorCount === 3) videoKey = 'crewmate3';
+        else videoKey = 'crewmate1';
+    }
+
+    let roleVideo = this.add.video(this.scale.width/2, this.scale.height/2, videoKey);
+    roleVideo.setDisplaySize(this.scale.width, this.scale.height);
+    roleVideo.play();
+
+    roleVideo.on('complete', () => {
+        this.scene.start('GameScene');
+    });
+                               }
 }
 }
