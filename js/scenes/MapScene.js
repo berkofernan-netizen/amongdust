@@ -243,18 +243,8 @@ class MapScene extends Phaser.Scene {
     // Character sprite creation is now handled by CharacterSystem
     
     getPlayerColor(index) {
-        const colors = [
-            0xff0000, // Red
-            0x0000ff, // Blue
-            0x00ff00, // Green
-            0xff69b4, // Pink
-            0xffa500, // Orange
-            0xffff00, // Yellow
-            0x000000, // Black
-            0xffffff, // White
-            0x800080, // Purple
-            0x00ffff  // Cyan
-        ];
+        const amongUsColors = CharacterSystem.getAvailableColors();
+        const colors = amongUsColors.map(colorData => colorData.value);
         return colors[index % colors.length];
     }
     

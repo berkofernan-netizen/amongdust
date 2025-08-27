@@ -104,27 +104,8 @@ class CharacterSystem {
             pet = null
         } = config;
         
-        // Create character sprite
-        const stateConfig = this.animationConfigs[state];
-        let sprite;
-        
-        if (stateConfig.animation) {
-            sprite = this.scene.add.sprite(x, y, stateConfig.texture);
-            if (state === 'walk') {
-                sprite.play(stateConfig.animation);
-            }
-        } else {
-            sprite = this.scene.add.image(x, y, stateConfig.texture);
-        }
-        
-        // Apply scale and tinting
-        sprite.setScale(stateConfig.scale);
-        this.applyCharacterTint(sprite, color);
-        
-        // Apply alpha if specified
-        if (stateConfig.alpha) {
-            sprite.setAlpha(stateConfig.alpha);
-        }
+        // Create composite character with proper Among Us coloring
+        const characterBody = this.createCompositeCharacter(x, y, color, state);
         
         // Create name tag
         const nameTag = this.scene.add.text(x, y - 40, name, {
@@ -138,7 +119,9 @@ class CharacterSystem {
         // Create character object
         const character = {
             id,
-            sprite,
+            sprite: characterBody.mainSprite, // Main sprite for compatibility
+            bodyTop: characterBody.topSprite,
+            bodyBottom: characterBody.bottomSprite,
             nameTag,
             state,
             color,
@@ -173,17 +156,105 @@ class CharacterSystem {
         return character;
     }
     
-    applyCharacterTint(sprite, color) {
-        // Apply tinting to grayscale sprites
-        // This system allows one sprite to work with all colors
-        sprite.setTint(color);
+    createCompositeCharacter(x, y, color, state) {
+        const stateConfig = this.animationConfigs[state];
+        const mainColor = color;
+        const darkColor = CharacterSystem.getAmongUsDarkColor(color);
         
-        // For better visibility, we can also adjust the brightness
+        // For now, we'll use a single sprite but apply the Among Us color scheme
+        // In a full implementation, this would use separate sprites for top/bottom
+        let mainSprite;
+        
+        if (stateConfig.animation) {
+            mainSprite = this.scene.add.sprite(x, y, stateConfig.texture);
+            if (state === 'walk') {
+                mainSprite.play(stateConfig.animation);
+            }
+        } else {
+            mainSprite = this.scene.add.image(x, y, stateConfig.texture);
+        }
+        
+        // Apply scale
+        mainSprite.setScale(stateConfig.scale);
+        
+        // Apply Among Us style tinting
+        this.applyAmongUsColoring(mainSprite, mainColor, darkColor);
+        
+        // Apply alpha if specified
+        if (stateConfig.alpha) {
+            mainSprite.setAlpha(stateConfig.alpha);
+        }
+        
+        return {
+            mainSprite: mainSprite,
+            topSprite: mainSprite, // Same sprite for now
+            bottomSprite: mainSprite // In full implementation, this would be separate
+        };
+    }
+    
+    applyAmongUsColoring(sprite, mainColor, darkColor) {
+        // For grayscale sprites, we apply a gradient-like effect
+        // This simulates the Among Us two-tone appearance
+        
+        // Apply main color as base tint
+        sprite.setTint(mainColor);
+        
+        // Store color data for reference
+        sprite.setData('mainColor', mainColor);
+        sprite.setData('darkColor', darkColor);
+        sprite.setData('isAmongUsStyle', true);
+        
+        // For very dark colors, add subtle outline for visibility
+        const brightness = this.getColorBrightness(mainColor);
+        if (brightness < 0.3) {
+            sprite.setStrokeStyle(1, 0xffffff, 0.2);
+        }
+        
+        // Add subtle shadow effect to simulate the bottom darker area
+        const shadowTint = this.scene.add.graphics();
+        shadowTint.fillStyle(darkColor, 0.3);
+        shadowTint.fillEllipse(sprite.x, sprite.y + 15, sprite.width * sprite.scaleX * 0.8, 10);
+        shadowTint.setDepth(sprite.depth - 1);
+        
+        // Store shadow reference for cleanup
+        sprite.setData('shadowTint', shadowTint);
+    }
+    
+    applyCharacterTint(sprite, color) {
+        // Among Us style: top part uses selected color, bottom part uses darker version
+        // Since we have grayscale sprites, we'll apply the main color as tint
+        // and create a darker version for the bottom part
+        
+        const mainColor = color;
+        const darkColor = this.getDarkerColor(color);
+        
+        // Apply main color tint to the sprite
+        sprite.setTint(mainColor);
+        
+        // Store both colors for potential future use (like separate body parts)
+        sprite.setData('mainColor', mainColor);
+        sprite.setData('darkColor', darkColor);
+        
+        // For better visibility with dark colors, add subtle outline
         const brightness = this.getColorBrightness(color);
         if (brightness < 0.3) {
-            // For dark colors, add a subtle outline effect
             sprite.setStrokeStyle(1, 0xffffff, 0.3);
         }
+    }
+    
+    getDarkerColor(color) {
+        // Extract RGB components
+        const r = (color >> 16) & 0xff;
+        const g = (color >> 8) & 0xff;
+        const b = color & 0xff;
+        
+        // Make it darker (multiply by 0.6 for bottom part)
+        const darkR = Math.floor(r * 0.6);
+        const darkG = Math.floor(g * 0.6);
+        const darkB = Math.floor(b * 0.6);
+        
+        // Combine back to hex color
+        return (darkR << 16) | (darkG << 8) | darkB;
     }
     
     getColorBrightness(color) {
@@ -336,6 +407,15 @@ class CharacterSystem {
         character.nameTag.x = x;
         character.nameTag.y = y - 40;
         
+        // Update shadow position if it exists
+        const shadowTint = character.sprite.getData('shadowTint');
+        if (shadowTint) {
+            shadowTint.clear();
+            const darkColor = character.sprite.getData('darkColor');
+            shadowTint.fillStyle(darkColor, 0.3);
+            shadowTint.fillEllipse(x, y + 15, character.sprite.width * character.sprite.scaleX * 0.8, 10);
+        }
+        
         // Update accessory positions
         this.updateAccessoryPositions(character);
     }
@@ -408,6 +488,12 @@ class CharacterSystem {
         
         // Clear tweens
         this.clearCharacterTweens(character);
+        
+        // Destroy shadow if exists
+        const shadowTint = character.sprite.getData('shadowTint');
+        if (shadowTint) {
+            shadowTint.destroy();
+        }
         
         // Destroy sprites
         character.sprite.destroy();
@@ -552,21 +638,28 @@ class CharacterSystem {
         return character;
     }
     
-    // Utility method to get all available colors
+    // Utility method to get all available colors (Among Us official colors)
     static getAvailableColors() {
         return [
-            { name: 'Red', value: 0xff0000 },
-            { name: 'Blue', value: 0x0000ff },
-            { name: 'Green', value: 0x00ff00 },
-            { name: 'Pink', value: 0xff69b4 },
-            { name: 'Orange', value: 0xffa500 },
-            { name: 'Yellow', value: 0xffff00 },
-            { name: 'Black', value: 0x000000 },
-            { name: 'White', value: 0xffffff },
-            { name: 'Purple', value: 0x800080 },
-            { name: 'Cyan', value: 0x00ffff },
-            { name: 'Lime', value: 0x32cd32 },
-            { name: 'Brown', value: 0x8b4513 }
+            { name: 'Red', value: 0xC51111, dark: 0x7A0838 },
+            { name: 'Blue', value: 0x132ED1, dark: 0x09158E },
+            { name: 'Green', value: 0x117F2D, dark: 0x0A4D1A },
+            { name: 'Pink', value: 0xED54BA, dark: 0xA63687 },
+            { name: 'Orange', value: 0xF07613, dark: 0xB33E15 },
+            { name: 'Yellow', value: 0xF5F557, dark: 0xC38823 },
+            { name: 'Black', value: 0x3F474E, dark: 0x1E1F26 },
+            { name: 'White', value: 0xD6E0F0, dark: 0x8394BF },
+            { name: 'Purple', value: 0x6B2FBB, dark: 0x3B177C },
+            { name: 'Brown', value: 0x71491E, dark: 0x5E2615 },
+            { name: 'Cyan', value: 0x38FEDC, dark: 0x24A8BE },
+            { name: 'Lime', value: 0x50EF39, dark: 0x15A742 }
         ];
+    }
+    
+    // Get the appropriate dark color for Among Us style
+    static getAmongUsDarkColor(mainColor) {
+        const colors = this.getAvailableColors();
+        const colorData = colors.find(c => c.value === mainColor);
+        return colorData ? colorData.dark : this.prototype.getDarkerColor(mainColor);
     }
 }

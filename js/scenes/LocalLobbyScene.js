@@ -5,8 +5,8 @@ class LocalLobbyScene extends Phaser.Scene {
         this.players = [];
         this.maxPlayers = 10;
         this.playerCustomization = {
-            bodyColor: 0xff0000, // Default red
-            backpackColor: 0x800080 // Default purple
+            bodyColor: 0xC51111, // Default Among Us red
+            backpackColor: 0x6B2FBB // Default Among Us purple
         };
     }
     
@@ -336,18 +336,9 @@ class LocalLobbyScene extends Phaser.Scene {
     }
     
     createColorPicker(x, y, type) {
-        const colors = [
-            0xff0000, // Red
-            0x0000ff, // Blue
-            0x00ff00, // Green
-            0xff69b4, // Pink
-            0xffa500, // Orange
-            0xffff00, // Yellow
-            0x000000, // Black
-            0xffffff, // White
-            0x800080, // Purple
-            0x00ffff  // Cyan
-        ];
+        // Use Among Us official colors
+        const amongUsColors = CharacterSystem.getAvailableColors();
+        const colors = amongUsColors.map(colorData => colorData.value);
         
         colors.forEach((color, index) => {
             const colorX = x + (index % 5) * 35;
