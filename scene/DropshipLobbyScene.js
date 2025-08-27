@@ -24,6 +24,10 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         // Role videos
         this.load.video('crewmate1', 'assets/roles/crewmate_1imp.mp4');
         this.load.video('impostor', 'assets/roles/impostor.mp4');
+        // Şapkalar
+this.load.image('hat1', 'assets/hats/hat1.png');
+this.load.image('hat2', 'assets/hats/hat2.png');
+this.load.image('hat3', 'assets/hats/hat3.png');
     }
 
     create() {
@@ -74,15 +78,16 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         // Host için ayarlar → Use button
         let useBtn = this.add.image(this.scale.width - 100, this.scale.height - 100, 'useButton').setInteractive();
         useBtn.on('pointerdown', () => {
-            console.log("Customization / Settings açılacak");
-            // Burada şapka, skin, pet seçim ekranı açılır
-        });
+    // Basit customization menüsü
+    let hat1Btn = this.add.image(200, 200, 'hat1').setInteractive().setScale(0.5);
+    let hat2Btn = this.add.image(300, 200, 'hat2').setInteractive().setScale(0.5);
+    let hat3Btn = this.add.image(400, 200, 'hat3').setInteractive().setScale(0.5);
 
-        // Start butonu
-        let startBtn = this.add.image(this.scale.width - 100, this.scale.height - 200, 'startButton').setInteractive();
-        startBtn.on('pointerdown', () => {
-            this.showRoleReveal();
-        });
+    // Seçim yapılınca player üstüne şapka ekle
+    hat1Btn.on('pointerdown', () => this.setHat('hat1'));
+    hat2Btn.on('pointerdown', () => this.setHat('hat2'));
+    hat3Btn.on('pointerdown', () => this.setHat('hat3'));
+});
     }
 
     showRoleReveal() {
@@ -109,4 +114,18 @@ export default class DropshipLobbyScene extends Phaser.Scene {
             });
         });
     }
+setHat(hatKey) {
+    if (this.currentHat) {
+        this.currentHat.destroy();
+    }
+    this.currentHat = this.add.image(this.player.x, this.player.y - 50, hatKey);
+    this.currentHat.setDepth(10);
+}
+
+update() {
+    if (this.currentHat) {
+        this.currentHat.x = this.player.x;
+        this.currentHat.y = this.player.y - 50;
+    }
+}
 }
