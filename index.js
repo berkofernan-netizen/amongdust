@@ -1,6 +1,3 @@
-window.onerror = function(message, source, lineno, colno, error) {
-    alert("Error: " + message + "\nLine: " + lineno);
-};
 import MainMenuScene from './scene/MainMenuScene.js';
 import DropshipLobbyScene from './scene/DropshipLobbyScene.js';
 import GameScene from './scene/GameScene.js';
@@ -9,7 +6,7 @@ const config = {
     type: Phaser.AUTO,
     width: 1280,
     height: 720,
-    scene: [ MainMenuScene, DropshipLobbyScene, GameScene ], // sahneler listesi
+    scene: [ MainMenuScene ],  // sadece ana menü sahnesi ile başla
     parent: 'game-container'
 };
 
