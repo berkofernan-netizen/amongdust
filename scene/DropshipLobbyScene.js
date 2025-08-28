@@ -5,7 +5,7 @@ export default class DropshipLobbyScene extends Phaser.Scene {
 
     preload() {
         // Arka plan
-        this.load.image('dropshipBg', 'assets/dropship.png');
+        this.load.image('dropshipBg', 'assets/Dropship.png');
 
         // Karakter animasyonları
         this.load.image('lobbyPose', 'assets/character/lobby.png');
