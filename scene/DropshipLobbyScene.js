@@ -109,12 +109,23 @@ export default class DropshipLobbyScene extends Phaser.Scene {
     }
 
     update() {
-        if (this.currentHat) {
-            this.currentHat.x = this.player.x;
-            this.currentHat.y = this.player.y - 50;
-        }
+    if (this.currentHat) {
+        this.currentHat.x = this.player.x;
+        this.currentHat.y = this.player.y - 50;
     }
+}
 
+// showRoleReveal artık ayrı bir metod
+showRoleReveal(impostorCount = 1) {
+    let shhh = this.add.sprite(this.scale.width/2, this.scale.height/2, 'shhhAnim');
+    shhh.setDisplaySize(this.scale.width, this.scale.height);
+    shhh.play('shhh_play');
+
+    shhh.on('animationcomplete', () => {
+        shhh.destroy();
+        this.startRoleVideo(impostorCount);
+    });
+}
     // Şapka ekleme
     setHat(hatKey) {
         if (this.currentHat) {
