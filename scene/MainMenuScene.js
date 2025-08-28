@@ -35,7 +35,9 @@ export default class MainMenuScene extends Phaser.Scene {
     playBtn.on('pointerdown', () => {
       this.scene.start('DropshipLobbyScene');
     });
-    localBtn.on('pointerdown', () => console.log("Local clicked"));
+    localBtn.on('pointerdown', () => {
+  this.scene.start('GameScene'); // Local tıklandığında GameScene aç
+});
     settingsBtn.on('pointerdown', () => console.log("Settings clicked"));
   }
       }
