@@ -23,20 +23,20 @@ export default class DropshipLobbyScene extends Phaser.Scene {
 
         // Role videos
         this.load.video('crewmate1', 'assets/roles/crewmate_1imp.mp4');
+        this.load.video('crewmate2', 'assets/roles/crewmate_2imp.mp4');
+        this.load.video('crewmate3', 'assets/roles/crewmate_3imp.mp4');
         this.load.video('impostor', 'assets/roles/impostor.mp4');
-        // Şapkalar
-this.load.image('hat1', 'assets/hats/hat1.png');
-this.load.image('hat2', 'assets/hats/hat2.png');
-this.load.image('hat3', 'assets/hats/hat3.png');
-        // Shhh animasyonu sprite sheet
-this.load.spritesheet('shhhAnim', 'assets/ui/shhh.png', {
-    frameWidth: 1280,  // senin shhh.png dosyasındaki tek kare genişliği
-    frameHeight: 720  // senin shhh.png dosyasındaki tek kare yüksekliği
-});
 
-// Role videoları (impostor ve crewmate farklı sayılara göre)
-this.load.video('crewmate2', 'assets/roles/crewmate_2imp.mp4');
-this.load.video('crewmate3', 'assets/roles/crewmate_3imp.mp4');
+        // Şapkalar
+        this.load.image('hat1', 'assets/hats/hat1.png');
+        this.load.image('hat2', 'assets/hats/hat2.png');
+        this.load.image('hat3', 'assets/hats/hat3.png');
+
+        // Shhh animasyonu sprite sheet
+        this.load.spritesheet('shhhAnim', 'assets/ui/shhh.png', {
+            frameWidth: 1280,
+            frameHeight: 720
+        });
     }
 
     create() {
@@ -87,94 +87,74 @@ this.load.video('crewmate3', 'assets/roles/crewmate_3imp.mp4');
         // Host için ayarlar → Use button
         let useBtn = this.add.image(this.scale.width - 100, this.scale.height - 100, 'useButton').setInteractive();
         useBtn.on('pointerdown', () => {
-    // Basit customization menüsü
-    let hat1Btn = this.add.image(200, 200, 'hat1').setInteractive().setScale(0.5);
-    let hat2Btn = this.add.image(300, 200, 'hat2').setInteractive().setScale(0.5);
-    let hat3Btn = this.add.image(400, 200, 'hat3').setInteractive().setScale(0.5);
+            // Basit customization menüsü
+            let hat1Btn = this.add.image(200, 200, 'hat1').setInteractive().setScale(0.5);
+            let hat2Btn = this.add.image(300, 200, 'hat2').setInteractive().setScale(0.5);
+            let hat3Btn = this.add.image(400, 200, 'hat3').setInteractive().setScale(0.5);
 
-    // Seçim yapılınca player üstüne şapka ekle
-    hat1Btn.on('pointerdown', () => this.setHat('hat1'));
-    hat2Btn.on('pointerdown', () => this.setHat('hat2'));
-    hat3Btn.on('pointerdown', () => this.setHat('hat3'));
-});
-   this.anims.create({
-    key: 'shhh_play',
-    frames: this.anims.generateFrameNumbers('shhhAnim', { start: 0, end: 3 }),
-    frameRate: 6,
-    repeat: 0
-});
-    }
+            // Seçim yapılınca player üstüne şapka ekle
+            hat1Btn.on('pointerdown', () => this.setHat('hat1'));
+            hat2Btn.on('pointerdown', () => this.setHat('hat2'));
+            hat3Btn.on('pointerdown', () => this.setHat('hat3'));
+        });
 
-    showRoleReveal() {
-        // Önce Shhh ekranı
-        let shhh = this.add.image(this.scale.width/2, this.scale.height/2, 'shhh');
-        shhh.setDisplaySize(this.scale.width, this.scale.height);
-
-        // 2 sn sonra kaldır ve role videosu oynat
-        this.time.delayedCall(2000, () => {
-            shhh.destroy();
-
-            // Şimdilik rastgele impostor/crewmate
-            let isImpostor = Math.random() < 0.2; // %20 impostor
-            let videoKey = isImpostor ? 'impostor' : 'crewmate1';
-
-            let roleVideo = this.add.video(this.scale.width/2, this.scale.height/2, videoKey);
-            roleVideo.setDisplaySize(this.scale.width, this.scale.height);
-            roleVideo.play();
-
-            // Video bitince → GameScene'e geçiş yapılabilir
-            roleVideo.on('complete', () => {
-                console.log("Role reveal bitti, oyun başlıyor...");
-                this.scene.start('GameScene');
-            });
+        // Shhh animasyonu
+        this.anims.create({
+            key: 'shhh_play',
+            frames: this.anims.generateFrameNumbers('shhhAnim', { start: 0, end: 3 }),
+            frameRate: 6,
+            repeat: 0
         });
     }
-setHat(hatKey) {
-    if (this.currentHat) {
-        this.currentHat.destroy();
-    }
-    this.currentHat = this.add.image(this.player.x, this.player.y - 50, hatKey);
-    this.currentHat.setDepth(10);
-}
 
-update() {
-    if (this.currentHat) {
-        this.currentHat.x = this.player.x;
-        this.currentHat.y = this.player.y - 50;
+    update() {
+        if (this.currentHat) {
+            this.currentHat.x = this.player.x;
+            this.currentHat.y = this.player.y - 50;
+        }
     }
+
+    // Şapka ekleme
+    setHat(hatKey) {
+        if (this.currentHat) {
+            this.currentHat.destroy();
+        }
+        this.currentHat = this.add.image(this.player.x, this.player.y - 50, hatKey);
+        this.currentHat.setDepth(10);
+    }
+
+    // Shhh ekranı → rol dağıtımı
     showRoleReveal(impostorCount = 1) {
-    // Shhh animasyonu başlat
-    let shhh = this.add.sprite(this.scale.width/2, this.scale.height/2, 'shhhAnim');
-    shhh.setDisplaySize(this.scale.width, this.scale.height);
-    shhh.play('shhh_play');
+        let shhh = this.add.sprite(this.scale.width/2, this.scale.height/2, 'shhhAnim');
+        shhh.setDisplaySize(this.scale.width, this.scale.height);
+        shhh.play('shhh_play');
 
-    // Animasyon bitince → role video
-    shhh.on('animationcomplete', () => {
-        shhh.destroy();
-        this.startRoleVideo(impostorCount);
-    });
-}
-
-startRoleVideo(impostorCount) {
-    let isImpostor = Math.random() < 0.2; // %20 impostor
-    let videoKey;
-
-    if (isImpostor) {
-        videoKey = 'impostor';
-    } else {
-        if (impostorCount === 1) videoKey = 'crewmate1';
-        else if (impostorCount === 2) videoKey = 'crewmate2';
-        else if (impostorCount === 3) videoKey = 'crewmate3';
-        else videoKey = 'crewmate1';
+        shhh.on('animationcomplete', () => {
+            shhh.destroy();
+            this.startRoleVideo(impostorCount);
+        });
     }
 
-    let roleVideo = this.add.video(this.scale.width/2, this.scale.height/2, videoKey);
-    roleVideo.setDisplaySize(this.scale.width, this.scale.height);
-    roleVideo.play();
+    // Role video oynatma
+    startRoleVideo(impostorCount) {
+        let isImpostor = Math.random() < 0.2; // %20 impostor
+        let videoKey;
 
-    roleVideo.on('complete', () => {
-        this.scene.start('GameScene');
-    });
-                               }
-}
-}
+        if (isImpostor) {
+            videoKey = 'impostor';
+        } else {
+            if (impostorCount === 1) videoKey = 'crewmate1';
+            else if (impostorCount === 2) videoKey = 'crewmate2';
+            else if (impostorCount === 3) videoKey = 'crewmate3';
+            else videoKey = 'crewmate1';
+        }
+
+        let roleVideo = this.add.video(this.scale.width/2, this.scale.height/2, videoKey);
+        roleVideo.setDisplaySize(this.scale.width, this.scale.height);
+        roleVideo.play();
+
+        roleVideo.on('complete', () => {
+            this.scene.start('GameScene');
+        });
+    }
+            }
