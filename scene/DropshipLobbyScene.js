@@ -3,6 +3,7 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         super({ key: 'DropshipLobbyScene' });
     }
 
+    
     preload() {
         // Arka plan
         this.load.image('dropshipBg', 'assets/Dropship.png');
