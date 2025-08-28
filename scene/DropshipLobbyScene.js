@@ -3,7 +3,6 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         super({ key: 'DropshipLobbyScene' });
     }
 
-    
     preload() {
         // Arka plan
         this.load.image('dropshipBg', 'assets/Dropship.png');
@@ -22,7 +21,7 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         this.load.image('startButton', 'assets/ui/start_button.png');
         this.load.image('shhh', 'assets/ui/shhh.png');
 
-        // Role videos
+        // Role videolar
         this.load.video('crewmate1', 'assets/roles/crewmate_1imp.mp4');
         this.load.video('crewmate2', 'assets/roles/crewmate_2imp.mp4');
         this.load.video('crewmate3', 'assets/roles/crewmate_3imp.mp4');
@@ -45,10 +44,10 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         this.add.image(this.scale.width/2, this.scale.height/2, 'dropshipBg')
             .setDisplaySize(this.scale.width, this.scale.height);
 
-        // Oyuncu başlangıcı → lobby pozisyonunda
+        // Oyuncu
         this.player = this.add.sprite(this.scale.width/2, this.scale.height/2, 'lobbyPose');
 
-        // 1–2 saniye sonra idle pozuna geç
+        // 2 sn sonra idle
         this.time.delayedCall(2000, () => {
             this.player.setTexture('idle');
         });
@@ -63,14 +62,12 @@ export default class DropshipLobbyScene extends Phaser.Scene {
             if (gameObject === this.joystickHandle) {
                 let dx = dragX - this.joystickBase.x;
                 let dy = dragY - this.joystickBase.y;
-                let dist = Math.min(100, Math.sqrt(dx*dx + dy*dy)); // max 100 px
+                let dist = Math.min(100, Math.sqrt(dx*dx + dy*dy));
                 let angle = Math.atan2(dy, dx);
 
-                // Joystick handle pozisyonu
                 gameObject.x = this.joystickBase.x + Math.cos(angle) * dist;
                 gameObject.y = this.joystickBase.y + Math.sin(angle) * dist;
 
-                // Player hareketi
                 this.player.x += Math.cos(angle) * 2;
                 this.player.y += Math.sin(angle) * 2;
                 this.player.setTexture('walk');
@@ -85,21 +82,18 @@ export default class DropshipLobbyScene extends Phaser.Scene {
             }
         });
 
-        // Host için ayarlar → Use button
+        // Use button → şapka seçimi
         let useBtn = this.add.image(this.scale.width - 100, this.scale.height - 100, 'useButton').setInteractive();
         useBtn.on('pointerdown', () => {
-            // Basit customization menüsü
             let hat1Btn = this.add.image(200, 200, 'hat1').setInteractive().setScale(0.5);
             let hat2Btn = this.add.image(300, 200, 'hat2').setInteractive().setScale(0.5);
             let hat3Btn = this.add.image(400, 200, 'hat3').setInteractive().setScale(0.5);
 
-            // Seçim yapılınca player üstüne şapka ekle
             hat1Btn.on('pointerdown', () => this.setHat('hat1'));
             hat2Btn.on('pointerdown', () => this.setHat('hat2'));
             hat3Btn.on('pointerdown', () => this.setHat('hat3'));
         });
 
-        // Shhh animasyonu
         this.anims.create({
             key: 'shhh_play',
             frames: this.anims.generateFrameNumbers('shhhAnim', { start: 0, end: 3 }),
@@ -108,25 +102,6 @@ export default class DropshipLobbyScene extends Phaser.Scene {
         });
     }
 
-    update() {
-    if (this.currentHat) {
-        this.currentHat.x = this.player.x;
-        this.currentHat.y = this.player.y - 50;
-    }
-}
-
-// showRoleReveal artık ayrı bir metod
-showRoleReveal(impostorCount = 1) {
-    let shhh = this.add.sprite(this.scale.width/2, this.scale.height/2, 'shhhAnim');
-    shhh.setDisplaySize(this.scale.width, this.scale.height);
-    shhh.play('shhh_play');
-
-    shhh.on('animationcomplete', () => {
-        shhh.destroy();
-        this.startRoleVideo(impostorCount);
-    });
-}
-    // Şapka ekleme
     setHat(hatKey) {
         if (this.currentHat) {
             this.currentHat.destroy();
@@ -135,7 +110,13 @@ showRoleReveal(impostorCount = 1) {
         this.currentHat.setDepth(10);
     }
 
-    // Shhh ekranı → rol dağıtımı
+    update() {
+        if (this.currentHat) {
+            this.currentHat.x = this.player.x;
+            this.currentHat.y = this.player.y - 50;
+        }
+    }
+
     showRoleReveal(impostorCount = 1) {
         let shhh = this.add.sprite(this.scale.width/2, this.scale.height/2, 'shhhAnim');
         shhh.setDisplaySize(this.scale.width, this.scale.height);
@@ -147,9 +128,8 @@ showRoleReveal(impostorCount = 1) {
         });
     }
 
-    // Role video oynatma
     startRoleVideo(impostorCount) {
-        let isImpostor = Math.random() < 0.2; // %20 impostor
+        let isImpostor = Math.random() < 0.2;
         let videoKey;
 
         if (isImpostor) {
@@ -169,4 +149,4 @@ showRoleReveal(impostorCount = 1) {
             this.scene.start('GameScene');
         });
     }
-            }
+    }
