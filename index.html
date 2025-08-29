@@ -321,6 +321,14 @@
                 this.seatTimer = this.time.delayedCall(1500, () => {
                     this.player.setTexture('character_idle');
                     this.isInSeat = false;
+                    
+                    // Create walk animation
+                    this.anims.create({
+                        key: 'walk',
+                        frames: this.anims.generateFrameNumbers('character_walk', { start: 0, end: -1 }),
+                        frameRate: 8,
+                        repeat: -1
+                    });
                 });
 
                 // Create invisible joystick initially
@@ -421,10 +429,15 @@
                     );
                     
                     // Change to walk animation
-                    this.player.setTexture('character_walk');
+                    if (this.player.anims) {
+                        this.player.play('walk');
+                    }
                 } else {
                     this.player.setVelocity(0, 0);
                     this.player.setTexture('character_idle');
+                    if (this.player.anims) {
+                        this.player.stop();
+                    }
                 }
             }
 
@@ -436,6 +449,9 @@
                 if (!this.isInSeat) {
                     this.player.setVelocity(0, 0);
                     this.player.setTexture('character_idle');
+                    if (this.player.anims) {
+                        this.player.stop();
+                    }
                 }
             }
 
@@ -577,7 +593,13 @@
                 // Load map and character assets
                 this.load.image('map', 'assets/map.png');
                 this.load.image('character_idle', 'assets/character/idle.png');
-                this.load.image('character_walk', 'assets/character/walk.png');
+                
+                // Load walk sprite sheet
+                this.load.spritesheet('character_walk', 'assets/character/walk.png', {
+                    frameWidth: 64, // Adjust based on your sprite sheet dimensions
+                    frameHeight: 64
+                });
+                
                 this.load.image('character_death', 'assets/character/death.png');
                 this.load.image('character_ghost', 'assets/character/ghost.png');
                 this.load.image('character_kill_animation', 'assets/character/kill_animation.png');
@@ -604,6 +626,14 @@
 
                 // Create player character
                 this.createPlayer();
+
+                // Create walk animation
+                this.anims.create({
+                    key: 'walk',
+                    frames: this.anims.generateFrameNumbers('character_walk', { start: 0, end: -1 }),
+                    frameRate: 8,
+                    repeat: -1
+                });
 
                 // Create AI players
                 this.createAIPlayers();
@@ -798,12 +828,13 @@
                     
                     // Change to walk animation (unless dead/ghost)
                     if (!gameState.isDead) {
-                        this.player.setTexture('character_walk');
+                        this.player.play('walk');
                     }
                 } else {
                     this.player.setVelocity(0, 0);
                     if (!gameState.isDead) {
                         this.player.setTexture('character_idle');
+                        this.player.stop();
                     }
                 }
 
@@ -819,6 +850,9 @@
                 if (!gameState.isDead) {
                     this.player.setVelocity(0, 0);
                     this.player.setTexture(gameState.isGhost ? 'character_ghost' : 'character_idle');
+                    if (this.player.anims && !gameState.isGhost) {
+                        this.player.stop();
+                    }
                 }
 
                 // Hide kill button when not moving
@@ -840,13 +874,14 @@
                 
                 // Move towards target
                 this.physics.moveToObject(ai.sprite, { x: newX, y: newY }, 80);
-                ai.sprite.setTexture('character_walk');
+                ai.sprite.play('walk');
                 
                 // Stop moving after reaching target
                 this.time.delayedCall(1500, () => {
                     ai.sprite.setVelocity(0, 0);
                     if (!ai.isDead) {
                         ai.sprite.setTexture('character_idle');
+                        ai.sprite.stop();
                     }
                 });
             }
