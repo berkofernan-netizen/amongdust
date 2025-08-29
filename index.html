@@ -1,28 +1,997 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Among Us Clone</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: black;
-      overflow: hidden;
-    }
-    #game-container {
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Among Us Clone</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #333;
+        }
+        #gameContainer {
+            position: relative;
+        }
+    </style>
 </head>
 <body>
-  <div id="game-container"></div>
+    <div id="gameContainer"></div>
+    
+    <script>
+        // Game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 1024,
+            height: 768,
+            parent: 'gameContainer',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            },
+            scene: [
+                MainMenuScene,
+                SettingsScene,
+                LocalLobbyScene,
+                DropshipLobbyScene,
+                MapScene
+            ]
+        };
 
-  <!-- Phaser kütüphanesi (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
-  
-  <!-- Senin oyun dosyan -->
-  <script type="module" src="index.js"></script>
+        // Global game state
+        let gameState = {
+            playerName: 'Player',
+            language: 'en',
+            playerColor: 0x00ff00,
+            backpackColor: 0x008800,
+            impostorCount: 1,
+            taskCount: 5,
+            selectedMap: 'skeld',
+            isImpostor: false,
+            isDead: false,
+            isGhost: false,
+            players: [],
+            corpses: []
+        };
+
+        // Main Menu Scene
+        class MainMenuScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'MainMenu' });
+            }
+
+            preload() {
+                // Load main menu assets
+                this.load.video('intro', 'assets/intro.mp4');
+                this.load.image('logo', 'assets/logo.png');
+                this.load.image('play_button', 'assets/ui/play_button.png');
+                this.load.image('local_button', 'assets/ui/local_button.png');
+                this.load.image('settings_button', 'assets/ui/settings_button.png');
+            }
+
+            create() {
+                // Add background video
+                const intro = this.add.video(512, 384, 'intro');
+                intro.play(true); // Loop the video
+
+                // Add logo
+                const logo = this.add.image(512, 150, 'logo');
+                logo.setScale(0.8);
+
+                // Add buttons
+                const playButton = this.add.image(512, 300, 'play_button');
+                playButton.setInteractive();
+                playButton.setScale(0.8);
+                playButton.on('pointerdown', () => {
+                    this.scene.start('LocalLobby');
+                });
+                playButton.on('pointerover', () => playButton.setTint(0xcccccc));
+                playButton.on('pointerout', () => playButton.clearTint());
+
+                const localButton = this.add.image(512, 400, 'local_button');
+                localButton.setInteractive();
+                localButton.setScale(0.8);
+                localButton.on('pointerdown', () => {
+                    this.scene.start('LocalLobby');
+                });
+                localButton.on('pointerover', () => localButton.setTint(0xcccccc));
+                localButton.on('pointerout', () => localButton.clearTint());
+
+                const settingsButton = this.add.image(512, 500, 'settings_button');
+                settingsButton.setInteractive();
+                settingsButton.setScale(0.8);
+                settingsButton.on('pointerdown', () => {
+                    this.scene.launch('Settings');
+                });
+                settingsButton.on('pointerover', () => settingsButton.setTint(0xcccccc));
+                settingsButton.on('pointerout', () => settingsButton.clearTint());
+            }
+        }
+
+        // Settings Scene (Overlay)
+        class SettingsScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'Settings' });
+            }
+
+            create() {
+                // Dark overlay background
+                const overlay = this.add.rectangle(512, 384, 1024, 768, 0x000000, 0.8);
+                overlay.setInteractive();
+
+                // Settings panel
+                const panel = this.add.rectangle(512, 384, 600, 400, 0x333333);
+                panel.setStrokeStyle(4, 0xffffff);
+
+                // Title
+                this.add.text(512, 250, 'Settings', {
+                    fontSize: '32px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+
+                // Language selection
+                this.add.text(350, 320, 'Language:', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                });
+
+                const languageOptions = ['English', 'Türkçe'];
+                const languageText = this.add.text(500, 320, languageOptions[0], {
+                    fontSize: '20px',
+                    fill: '#00ff00',
+                    fontFamily: 'Arial'
+                });
+                languageText.setInteractive();
+                
+                let currentLang = 0;
+                languageText.on('pointerdown', () => {
+                    currentLang = (currentLang + 1) % languageOptions.length;
+                    languageText.setText(languageOptions[currentLang]);
+                    gameState.language = currentLang === 0 ? 'en' : 'tr';
+                });
+
+                // Player name input (simulated)
+                this.add.text(350, 380, 'Player Name:', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                });
+
+                const nameInput = this.add.text(500, 380, gameState.playerName, {
+                    fontSize: '20px',
+                    fill: '#00ff00',
+                    fontFamily: 'Arial'
+                });
+                nameInput.setInteractive();
+                nameInput.on('pointerdown', () => {
+                    // Simple name change (in real implementation, you'd want proper input)
+                    const names = ['Player', 'Red', 'Blue', 'Green', 'Purple', 'Yellow'];
+                    const currentIndex = names.indexOf(gameState.playerName);
+                    const newIndex = (currentIndex + 1) % names.length;
+                    gameState.playerName = names[newIndex];
+                    nameInput.setText(gameState.playerName);
+                });
+
+                // Close button
+                const closeButton = this.add.text(512, 500, 'Close', {
+                    fontSize: '24px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial',
+                    backgroundColor: '#666666',
+                    padding: { x: 20, y: 10 }
+                }).setOrigin(0.5);
+                closeButton.setInteractive();
+                closeButton.on('pointerdown', () => {
+                    this.scene.stop();
+                });
+                closeButton.on('pointerover', () => closeButton.setTint(0xcccccc));
+                closeButton.on('pointerout', () => closeButton.clearTint());
+            }
+        }
+
+        // Local Play Lobby Scene
+        class LocalLobbyScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'LocalLobby' });
+            }
+
+            preload() {
+                this.load.image('start_button', 'assets/ui/start_button.png');
+            }
+
+            create() {
+                // Background
+                this.add.rectangle(512, 384, 1024, 768, 0x1a1a2e);
+
+                // Title
+                this.add.text(512, 100, 'Local Play Lobby', {
+                    fontSize: '36px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+
+                // Color selection area
+                this.add.text(512, 200, 'Choose Your Colors', {
+                    fontSize: '24px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+
+                // Body color selection
+                this.add.text(300, 300, 'Body Color:', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                });
+
+                const bodyColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
+                let currentBodyColor = 0;
+                
+                const bodyColorPreview = this.add.circle(500, 300, 30, bodyColors[currentBodyColor]);
+                bodyColorPreview.setInteractive();
+                bodyColorPreview.on('pointerdown', () => {
+                    currentBodyColor = (currentBodyColor + 1) % bodyColors.length;
+                    bodyColorPreview.fillColor = bodyColors[currentBodyColor];
+                    gameState.playerColor = bodyColors[currentBodyColor];
+                });
+
+                // Backpack color selection
+                this.add.text(300, 380, 'Backpack Color:', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                });
+
+                const backpackColors = [0x880000, 0x008800, 0x000088, 0x888800, 0x880088, 0x008888];
+                let currentBackpackColor = 0;
+                
+                const backpackColorPreview = this.add.circle(500, 380, 30, backpackColors[currentBackpackColor]);
+                backpackColorPreview.setInteractive();
+                backpackColorPreview.on('pointerdown', () => {
+                    currentBackpackColor = (currentBackpackColor + 1) % backpackColors.length;
+                    backpackColorPreview.fillColor = backpackColors[currentBackpackColor];
+                    gameState.backpackColor = backpackColors[currentBackpackColor];
+                });
+
+                // Start button
+                const startButton = this.add.image(512, 500, 'start_button');
+                startButton.setInteractive();
+                startButton.setScale(0.8);
+                startButton.on('pointerdown', () => {
+                    this.scene.start('DropshipLobby');
+                });
+                startButton.on('pointerover', () => startButton.setTint(0xcccccc));
+                startButton.on('pointerout', () => startButton.clearTint());
+
+                // Back button
+                const backButton = this.add.text(100, 700, 'Back', {
+                    fontSize: '24px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial',
+                    backgroundColor: '#666666',
+                    padding: { x: 15, y: 8 }
+                });
+                backButton.setInteractive();
+                backButton.on('pointerdown', () => {
+                    this.scene.start('MainMenu');
+                });
+                backButton.on('pointerover', () => backButton.setTint(0xcccccc));
+                backButton.on('pointerout', () => backButton.clearTint());
+            }
+        }
+
+        // Dropship Lobby Scene
+        class DropshipLobbyScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'DropshipLobby' });
+                this.player = null;
+                this.joystick = null;
+                this.joystickHandle = null;
+                this.isDragging = false;
+                this.isInSeat = true;
+                this.seatTimer = null;
+            }
+
+            preload() {
+                // Load dropship assets
+                this.load.image('dropship', 'assets/dropship.png');
+                this.load.image('character_lobby', 'assets/character/lobby.png');
+                this.load.image('character_idle', 'assets/character/idle.png');
+                this.load.image('character_walk', 'assets/character/walk.png');
+                this.load.image('joystick_base', 'assets/ui/joystick_base.png');
+                this.load.image('joystick_handle', 'assets/ui/joystick_handle.png');
+                this.load.image('use_button', 'assets/ui/use_button.png');
+                this.load.image('shhh', 'assets/ui/shhh.png');
+                
+                // Load role reveal videos
+                this.load.video('crewmate_1imp', 'assets/roles/crewmate_1imp.mp4');
+                this.load.video('crewmate_2imp', 'assets/roles/crewmate_2imp.mp4');
+                this.load.video('crewmate_3imp', 'assets/roles/crewmate_3imp.mp4');
+                this.load.video('impostor', 'assets/roles/impostor.mp4');
+            }
+
+            create() {
+                // Add dropship background
+                this.add.image(512, 384, 'dropship');
+
+                // Create player character
+                this.player = this.physics.add.sprite(400, 400, 'character_lobby');
+                this.player.setTint(gameState.playerColor);
+                
+                // Player name above character
+                this.playerNameText = this.add.text(this.player.x, this.player.y - 50, gameState.playerName, {
+                    fontSize: '16px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+
+                // Start in seat animation, then switch to idle after 1-2 seconds
+                this.seatTimer = this.time.delayedCall(1500, () => {
+                    this.player.setTexture('character_idle');
+                    this.isInSeat = false;
+                });
+
+                // Create invisible joystick initially
+                this.createJoystick();
+
+                // Laptop/Computer for settings (Use button)
+                const laptop = this.add.rectangle(700, 300, 80, 50, 0x444444);
+                const useButton = this.add.image(700, 250, 'use_button');
+                useButton.setScale(0.6);
+                useButton.setInteractive();
+                useButton.on('pointerdown', () => {
+                    this.showHostSettings();
+                });
+
+                // Mobile touch controls
+                this.input.on('pointerdown', (pointer) => {
+                    if (!this.isInSeat && !this.isDragging) {
+                        this.showJoystick(pointer.x, pointer.y);
+                    }
+                });
+
+                this.input.on('pointerup', () => {
+                    this.hideJoystick();
+                });
+
+                this.input.on('pointermove', (pointer) => {
+                    if (this.isDragging) {
+                        this.updateJoystick(pointer);
+                    }
+                });
+            }
+
+            createJoystick() {
+                this.joystick = this.add.image(0, 0, 'joystick_base');
+                this.joystick.setVisible(false);
+                this.joystick.setScale(0.8);
+
+                this.joystickHandle = this.add.image(0, 0, 'joystick_handle');
+                this.joystickHandle.setVisible(false);
+                this.joystickHandle.setScale(0.6);
+                this.joystickHandle.setInteractive();
+            }
+
+            showJoystick(x, y) {
+                if (this.isInSeat) return;
+
+                // Position joystick at bottom left area, not at touch point
+                const joystickX = 150;
+                const joystickY = this.cameras.main.height - 150;
+                
+                this.joystick.setPosition(joystickX, joystickY);
+                this.joystickHandle.setPosition(joystickX, joystickY);
+                
+                this.joystick.setVisible(true);
+                this.joystickHandle.setVisible(true);
+                
+                this.isDragging = true;
+            }
+
+            updateJoystick(pointer) {
+                if (!this.isDragging || this.isInSeat) return;
+
+                const distance = Phaser.Math.Distance.Between(
+                    this.joystick.x, this.joystick.y,
+                    pointer.x, pointer.y
+                );
+
+                const maxDistance = 50;
+                
+                if (distance <= maxDistance) {
+                    this.joystickHandle.setPosition(pointer.x, pointer.y);
+                } else {
+                    const angle = Phaser.Math.Angle.Between(
+                        this.joystick.x, this.joystick.y,
+                        pointer.x, pointer.y
+                    );
+                    
+                    this.joystickHandle.setPosition(
+                        this.joystick.x + Math.cos(angle) * maxDistance,
+                        this.joystick.y + Math.sin(angle) * maxDistance
+                    );
+                }
+
+                // Move player based on joystick
+                const moveDistance = Math.min(distance, maxDistance);
+                const normalizedDistance = moveDistance / maxDistance;
+                
+                if (normalizedDistance > 0.1) {
+                    const angle = Phaser.Math.Angle.Between(
+                        this.joystick.x, this.joystick.y,
+                        this.joystickHandle.x, this.joystickHandle.y
+                    );
+                    
+                    const speed = 150 * normalizedDistance;
+                    this.player.setVelocity(
+                        Math.cos(angle) * speed,
+                        Math.sin(angle) * speed
+                    );
+                    
+                    // Change to walk animation
+                    this.player.setTexture('character_walk');
+                } else {
+                    this.player.setVelocity(0, 0);
+                    this.player.setTexture('character_idle');
+                }
+            }
+
+            hideJoystick() {
+                this.joystick.setVisible(false);
+                this.joystickHandle.setVisible(false);
+                this.isDragging = false;
+                
+                if (!this.isInSeat) {
+                    this.player.setVelocity(0, 0);
+                    this.player.setTexture('character_idle');
+                }
+            }
+
+            showHostSettings() {
+                // Create settings overlay
+                const overlay = this.add.rectangle(512, 384, 1024, 768, 0x000000, 0.8);
+                const panel = this.add.rectangle(512, 384, 600, 500, 0x333333);
+                panel.setStrokeStyle(4, 0xffffff);
+
+                this.add.text(512, 200, 'Host Settings', {
+                    fontSize: '32px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+
+                // Impostor count
+                this.add.text(350, 280, 'Impostors:', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                });
+
+                const impCountText = this.add.text(500, 280, gameState.impostorCount.toString(), {
+                    fontSize: '20px',
+                    fill: '#00ff00',
+                    fontFamily: 'Arial'
+                });
+                impCountText.setInteractive();
+                impCountText.on('pointerdown', () => {
+                    gameState.impostorCount = gameState.impostorCount >= 3 ? 1 : gameState.impostorCount + 1;
+                    impCountText.setText(gameState.impostorCount.toString());
+                });
+
+                // Task count
+                this.add.text(350, 330, 'Tasks:', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                });
+
+                const taskCountText = this.add.text(500, 330, gameState.taskCount.toString(), {
+                    fontSize: '20px',
+                    fill: '#00ff00',
+                    fontFamily: 'Arial'
+                });
+                taskCountText.setInteractive();
+                taskCountText.on('pointerdown', () => {
+                    gameState.taskCount = gameState.taskCount >= 10 ? 1 : gameState.taskCount + 1;
+                    taskCountText.setText(gameState.taskCount.toString());
+                });
+
+                // Start Game button
+                const startGameButton = this.add.text(512, 450, 'START GAME', {
+                    fontSize: '28px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial',
+                    backgroundColor: '#00aa00',
+                    padding: { x: 20, y: 10 }
+                }).setOrigin(0.5);
+                startGameButton.setInteractive();
+                startGameButton.on('pointerdown', () => {
+                    this.startGame();
+                });
+
+                // Close button
+                const closeButton = this.add.text(512, 520, 'Close', {
+                    fontSize: '20px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial',
+                    backgroundColor: '#666666',
+                    padding: { x: 15, y: 8 }
+                }).setOrigin(0.5);
+                closeButton.setInteractive();
+                closeButton.on('pointerdown', () => {
+                    overlay.destroy();
+                    panel.destroy();
+                });
+            }
+
+            startGame() {
+                // Show "Shhh" screen first
+                const shhhOverlay = this.add.rectangle(512, 384, 1024, 768, 0x000000);
+                const shhhImage = this.add.image(512, 384, 'shhh');
+                
+                // After 2 seconds, show role reveal
+                this.time.delayedCall(2000, () => {
+                    shhhOverlay.destroy();
+                    shhhImage.destroy();
+                    this.showRoleReveal();
+                });
+            }
+
+            showRoleReveal() {
+                // Randomly assign role (you are always host, so 50% chance to be impostor)
+                const isImpostor = Math.random() < 0.5;
+                gameState.isImpostor = isImpostor;
+                
+                let videoKey;
+                if (isImpostor) {
+                    videoKey = 'impostor';
+                } else {
+                    // Choose crewmate video based on impostor count
+                    videoKey = `crewmate_${gameState.impostorCount}imp`;
+                }
+
+                const roleVideo = this.add.video(512, 384, videoKey);
+                roleVideo.play();
+                
+                roleVideo.on('complete', () => {
+                    // After role reveal, transition to main game (Map Scene)
+                    this.scene.start('MapScene');
+                });
+            }
+
+            update() {
+                // Update player name position to follow player
+                if (this.playerNameText && this.player) {
+                    this.playerNameText.setPosition(this.player.x, this.player.y - 50);
+                }
+            }
+        }
+
+        // Map Scene - Main Game Scene
+        class MapScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'MapScene' });
+                this.player = null;
+                this.aiPlayers = [];
+                this.joystick = null;
+                this.joystickHandle = null;
+                this.isDragging = false;
+                this.playerNameText = null;
+                this.killButton = null;
+                this.corpses = [];
+                this.walls = null;
+            }
+
+            preload() {
+                // Load map and character assets
+                this.load.image('map', 'assets/map.png');
+                this.load.image('character_idle', 'assets/character/idle.png');
+                this.load.image('character_walk', 'assets/character/walk.png');
+                this.load.image('character_death', 'assets/character/death.png');
+                this.load.image('character_ghost', 'assets/character/ghost.png');
+                this.load.image('character_kill_animation', 'assets/character/kill_animation.png');
+                this.load.image('kill_button', 'assets/ui/kill_button.png');
+                this.load.image('joystick_base', 'assets/ui/joystick_base.png');
+                this.load.image('joystick_handle', 'assets/ui/joystick_handle.png');
+            }
+
+            create() {
+                // Add map background
+                const map = this.add.image(512, 384, 'map');
+                
+                // Create collision boundaries (invisible walls around map edges and internal walls)
+                this.walls = this.physics.add.staticGroup();
+                
+                // Map boundaries
+                this.walls.create(0, 384, null).setSize(20, 768).setVisible(false);     // Left wall
+                this.walls.create(1024, 384, null).setSize(20, 768).setVisible(false); // Right wall
+                this.walls.create(512, 0, null).setSize(1024, 20).setVisible(false);   // Top wall
+                this.walls.create(512, 768, null).setSize(1024, 20).setVisible(false); // Bottom wall
+                
+                // Internal walls (approximate positions - you can adjust these based on your map)
+                this.createInternalWalls();
+
+                // Create player character
+                this.createPlayer();
+
+                // Create AI players
+                this.createAIPlayers();
+
+                // Create UI
+                this.createUI();
+
+                // Mobile joystick controls
+                this.setupMobileControls();
+            }
+
+            createInternalWalls() {
+                // Add internal wall colliders based on map layout
+                // These are approximate - adjust coordinates based on your actual map.png
+                
+                // Example internal walls (you should adjust these to match your map)
+                this.walls.create(200, 200, null).setSize(100, 20).setVisible(false);
+                this.walls.create(300, 300, null).setSize(20, 100).setVisible(false);
+                this.walls.create(700, 200, null).setSize(100, 20).setVisible(false);
+                this.walls.create(600, 500, null).setSize(150, 20).setVisible(false);
+            }
+
+            createPlayer() {
+                // Create main player
+                const startX = 400;
+                const startY = 400;
+                
+                if (gameState.isDead) {
+                    this.player = this.physics.add.sprite(startX, startY, 'character_ghost');
+                } else {
+                    this.player = this.physics.add.sprite(startX, startY, 'character_idle');
+                }
+                
+                this.player.setTint(gameState.playerColor);
+                this.player.setCollideWorldBounds(true);
+                
+                // Add collision with walls
+                this.physics.add.collider(this.player, this.walls);
+
+                // Player name above character
+                this.playerNameText = this.add.text(this.player.x, this.player.y - 40, gameState.playerName, {
+                    fontSize: '14px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial',
+                    stroke: '#000000',
+                    strokeThickness: 2
+                }).setOrigin(0.5);
+            }
+
+            createAIPlayers() {
+                const aiColors = [0xff0000, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffa500];
+                const aiNames = ['Red', 'Blue', 'Yellow', 'Purple', 'Cyan', 'Orange'];
+                
+                for (let i = 0; i < 5; i++) {
+                    const aiPlayer = this.physics.add.sprite(
+                        100 + i * 150, 
+                        300 + (i % 2) * 100, 
+                        'character_idle'
+                    );
+                    
+                    aiPlayer.setTint(aiColors[i]);
+                    aiPlayer.setCollideWorldBounds(true);
+                    this.physics.add.collider(aiPlayer, this.walls);
+                    
+                    // AI name
+                    const aiNameText = this.add.text(aiPlayer.x, aiPlayer.y - 40, aiNames[i], {
+                        fontSize: '14px',
+                        fill: '#ffffff',
+                        fontFamily: 'Arial',
+                        stroke: '#000000',
+                        strokeThickness: 2
+                    }).setOrigin(0.5);
+
+                    // Store AI player data
+                    this.aiPlayers.push({
+                        sprite: aiPlayer,
+                        nameText: aiNameText,
+                        name: aiNames[i],
+                        color: aiColors[i],
+                        isDead: false,
+                        moveTimer: 0,
+                        targetX: aiPlayer.x,
+                        targetY: aiPlayer.y
+                    });
+
+                    // Random AI movement
+                    this.time.addEvent({
+                        delay: 2000 + Math.random() * 3000,
+                        callback: () => this.moveAIPlayer(i),
+                        loop: true
+                    });
+                }
+            }
+
+            createUI() {
+                // Create invisible joystick
+                this.joystick = this.add.image(0, 0, 'joystick_base');
+                this.joystick.setVisible(false);
+                this.joystick.setScale(0.8);
+
+                this.joystickHandle = this.add.image(0, 0, 'joystick_handle');
+                this.joystickHandle.setVisible(false);
+                this.joystickHandle.setScale(0.6);
+                this.joystickHandle.setInteractive();
+
+                // Kill button for impostors
+                if (gameState.isImpostor && !gameState.isDead) {
+                    this.killButton = this.add.image(900, 650, 'kill_button');
+                    this.killButton.setScale(0.8);
+                    this.killButton.setInteractive();
+                    this.killButton.setVisible(false); // Hidden by default
+                    
+                    this.killButton.on('pointerdown', () => {
+                        this.performKill();
+                    });
+                }
+            }
+
+            setupMobileControls() {
+                // Mobile touch controls for movement
+                this.input.on('pointerdown', (pointer) => {
+                    if (!gameState.isDead && !this.isDragging) {
+                        this.showJoystick();
+                    }
+                });
+
+                this.input.on('pointerup', () => {
+                    this.hideJoystick();
+                });
+
+                this.input.on('pointermove', (pointer) => {
+                    if (this.isDragging) {
+                        this.updateJoystick(pointer);
+                    }
+                });
+            }
+
+            showJoystick() {
+                if (gameState.isDead) return;
+
+                const joystickX = 150;
+                const joystickY = this.cameras.main.height - 150;
+                
+                this.joystick.setPosition(joystickX, joystickY);
+                this.joystickHandle.setPosition(joystickX, joystickY);
+                
+                this.joystick.setVisible(true);
+                this.joystickHandle.setVisible(true);
+                
+                this.isDragging = true;
+            }
+
+            updateJoystick(pointer) {
+                if (!this.isDragging || gameState.isDead) return;
+
+                const distance = Phaser.Math.Distance.Between(
+                    this.joystick.x, this.joystick.y,
+                    pointer.x, pointer.y
+                );
+
+                const maxDistance = 50;
+                
+                if (distance <= maxDistance) {
+                    this.joystickHandle.setPosition(pointer.x, pointer.y);
+                } else {
+                    const angle = Phaser.Math.Angle.Between(
+                        this.joystick.x, this.joystick.y,
+                        pointer.x, pointer.y
+                    );
+                    
+                    this.joystickHandle.setPosition(
+                        this.joystick.x + Math.cos(angle) * maxDistance,
+                        this.joystick.y + Math.sin(angle) * maxDistance
+                    );
+                }
+
+                // Move player based on joystick
+                const moveDistance = Math.min(distance, maxDistance);
+                const normalizedDistance = moveDistance / maxDistance;
+                
+                if (normalizedDistance > 0.1) {
+                    const angle = Phaser.Math.Angle.Between(
+                        this.joystick.x, this.joystick.y,
+                        this.joystickHandle.x, this.joystickHandle.y
+                    );
+                    
+                    const speed = gameState.isGhost ? 200 : 120; // Ghosts move faster
+                    this.player.setVelocity(
+                        Math.cos(angle) * speed * normalizedDistance,
+                        Math.sin(angle) * speed * normalizedDistance
+                    );
+                    
+                    // Change to walk animation (unless dead/ghost)
+                    if (!gameState.isDead) {
+                        this.player.setTexture('character_walk');
+                    }
+                } else {
+                    this.player.setVelocity(0, 0);
+                    if (!gameState.isDead) {
+                        this.player.setTexture('character_idle');
+                    }
+                }
+
+                // Check for nearby players (for kill button)
+                this.checkNearbyPlayers();
+            }
+
+            hideJoystick() {
+                this.joystick.setVisible(false);
+                this.joystickHandle.setVisible(false);
+                this.isDragging = false;
+                
+                if (!gameState.isDead) {
+                    this.player.setVelocity(0, 0);
+                    this.player.setTexture(gameState.isGhost ? 'character_ghost' : 'character_idle');
+                }
+
+                // Hide kill button when not moving
+                if (this.killButton) {
+                    this.killButton.setVisible(false);
+                }
+            }
+
+            moveAIPlayer(index) {
+                const ai = this.aiPlayers[index];
+                if (!ai || ai.isDead) return;
+
+                // Random movement for AI
+                const newX = Phaser.Math.Between(100, 924);
+                const newY = Phaser.Math.Between(100, 668);
+                
+                ai.targetX = newX;
+                ai.targetY = newY;
+                
+                // Move towards target
+                this.physics.moveToObject(ai.sprite, { x: newX, y: newY }, 80);
+                ai.sprite.setTexture('character_walk');
+                
+                // Stop moving after reaching target
+                this.time.delayedCall(1500, () => {
+                    ai.sprite.setVelocity(0, 0);
+                    if (!ai.isDead) {
+                        ai.sprite.setTexture('character_idle');
+                    }
+                });
+            }
+
+            checkNearbyPlayers() {
+                if (!gameState.isImpostor || gameState.isDead) return;
+
+                let nearbyPlayer = null;
+                const killDistance = 80;
+
+                for (let ai of this.aiPlayers) {
+                    if (ai.isDead) continue;
+                    
+                    const distance = Phaser.Math.Distance.Between(
+                        this.player.x, this.player.y,
+                        ai.sprite.x, ai.sprite.y
+                    );
+
+                    if (distance < killDistance) {
+                        nearbyPlayer = ai;
+                        break;
+                    }
+                }
+
+                // Show/hide kill button based on nearby players
+                if (this.killButton) {
+                    this.killButton.setVisible(nearbyPlayer !== null);
+                }
+            }
+
+            performKill() {
+                if (!gameState.isImpostor || gameState.isDead) return;
+
+                // Find nearest AI player to kill
+                let targetPlayer = null;
+                let minDistance = 80;
+
+                for (let ai of this.aiPlayers) {
+                    if (ai.isDead) continue;
+                    
+                    const distance = Phaser.Math.Distance.Between(
+                        this.player.x, this.player.y,
+                        ai.sprite.x, ai.sprite.y
+                    );
+
+                    if (distance < minDistance) {
+                        targetPlayer = ai;
+                        minDistance = distance;
+                    }
+                }
+
+                if (!targetPlayer) return;
+
+                // Hide kill button
+                this.killButton.setVisible(false);
+
+                // Play kill animation for impostor (only on killer's screen)
+                const killAnimation = this.add.image(targetPlayer.sprite.x, targetPlayer.sprite.y, 'character_kill_animation');
+                killAnimation.setTint(targetPlayer.color);
+
+                // After kill animation, show death animation for everyone
+                this.time.delayedCall(1000, () => {
+                    killAnimation.destroy();
+                    this.showDeathAnimation(targetPlayer);
+                });
+            }
+
+            showDeathAnimation(targetPlayer) {
+                // Change impostor to death.png during kill
+                this.player.setTexture('character_death');
+                
+                // Show death animation for target player
+                targetPlayer.sprite.setTexture('character_death');
+                targetPlayer.isDead = true;
+
+                // After death animation, create corpse
+                this.time.delayedCall(1500, () => {
+                    // Return impostor to idle
+                    this.player.setTexture('character_idle');
+                    
+                    // Create corpse at death location
+                    const corpse = this.add.image(targetPlayer.sprite.x, targetPlayer.sprite.y, 'character_death');
+                    corpse.setTint(targetPlayer.color);
+                    corpse.setInteractive();
+                    corpse.on('pointerdown', () => {
+                        this.reportBody(corpse);
+                    });
+                    
+                    this.corpses.push({
+                        sprite: corpse,
+                        reportedBy: null,
+                        playerName: targetPlayer.name
+                    });
+
+                    // Remove dead AI player sprite and name
+                    targetPlayer.sprite.setVisible(false);
+                    targetPlayer.nameText.setVisible(false);
+                });
+            }
+
+            reportBody(corpse) {
+                // Body reporting logic would go here
+                console.log('Body reported!');
+                // This would trigger voting phase
+            }
+
+            update() {
+                // Update player name position
+                if (this.playerNameText && this.player) {
+                    this.playerNameText.setPosition(this.player.x, this.player.y - 40);
+                }
+
+                // Update AI player name positions
+                for (let ai of this.aiPlayers) {
+                    if (ai.nameText && ai.sprite && !ai.isDead) {
+                        ai.nameText.setPosition(ai.sprite.x, ai.sprite.y - 40);
+                    }
+                }
+            }
+        }
+
+        // Start the game
+        const game = new Phaser.Game(config);
+    </script>
 </body>
-</html>
+  </html>
