@@ -28,28 +28,6 @@
     <div id="gameContainer"></div>
     
     <script>
-        // Game configuration
-        const config = {
-            type: Phaser.AUTO,
-            width: 1024,
-            height: 768,
-            parent: 'gameContainer',
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 0 },
-                    debug: false
-                }
-            },
-            scene: [
-                MainMenuScene,
-                SettingsScene,
-                LocalLobbyScene,
-                DropshipLobbyScene,
-                MapScene
-            ]
-        };
-
         // Global game state
         let gameState = {
             playerName: 'Player',
@@ -308,7 +286,7 @@
 
             preload() {
                 // Load dropship assets
-                this.load.image('dropship', 'assets/Dropship.png');
+                this.load.image('dropship', 'assets/dropship.png');
                 this.load.image('character_lobby', 'assets/character/lobby.png');
                 this.load.image('character_idle', 'assets/character/idle.png');
                 this.load.image('character_walk', 'assets/character/walk.png');
@@ -990,8 +968,30 @@
             }
         }
 
+        // Game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 1024,
+            height: 768,
+            parent: 'gameContainer',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            },
+            scene: [
+                MainMenuScene,
+                SettingsScene,
+                LocalLobbyScene,
+                DropshipLobbyScene,
+                MapScene
+            ]
+        };
+
         // Start the game
         const game = new Phaser.Game(config);
     </script>
 </body>
-  </html>
+    </html>
