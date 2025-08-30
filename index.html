@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+const bodyColors = <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -45,85 +45,24 @@
             spriteScale: 1.0 // For adjusting sprite sizes
         };
 
-        // Helper function to darken a color for backpack (but keep eye area unchanged)
+        // Helper function to darken a color for backpack
         function darkenColor(color) {
             const r = (color >> 16) & 0xFF;
             const g = (color >> 8) & 0xFF;
             const b = color & 0xFF;
             
-            // Make it darker (multiply by 0.5 for more contrast)
-            const darkR = Math.floor(r * 0.5);
-            const darkG = Math.floor(g * 0.5);
-            const darkB = Math.floor(b * 0.5);
+            // Make it darker (multiply by 0.6)
+            const darkR = Math.floor(r * 0.6);
+            const darkG = Math.floor(g * 0.6);
+            const darkB = Math.floor(b * 0.6);
             
             return (darkR << 16) | (darkG << 8) | darkB;
         }
 
-        // Helper function to adjust sprite size with UI control
+        // Helper function to adjust sprite size
         function adjustSpriteSize(sprite, scale = gameState.spriteScale) {
             sprite.setScale(scale);
             return sprite;
-        }
-
-        // Size adjustment UI controls
-        function createSizeControls(scene, x, y) {
-            const sizeControlsGroup = scene.add.group();
-            
-            // Size label
-            const sizeLabel = scene.add.text(x, y, 'Boyut:', {
-                fontSize: '16px',
-                fill: '#ffffff',
-                fontFamily: 'Arial'
-            });
-            sizeControlsGroup.add(sizeLabel);
-            
-            // Decrease button
-            const decreaseBtn = scene.add.text(x, y + 30, '[-]', {
-                fontSize: '20px',
-                fill: '#ff0000',
-                fontFamily: 'Arial',
-                backgroundColor: '#333333',
-                padding: { x: 10, y: 5 }
-            });
-            decreaseBtn.setInteractive();
-            decreaseBtn.on('pointerdown', () => {
-                if (gameState.spriteScale > 0.5) {
-                    gameState.spriteScale -= 0.1;
-                    scaleText.setText((gameState.spriteScale).toFixed(1) + 'x');
-                    // Update all sprites in the scene if they exist
-                    scene.updateAllSpriteSizes && scene.updateAllSpriteSizes();
-                }
-            });
-            sizeControlsGroup.add(decreaseBtn);
-            
-            // Current scale display
-            const scaleText = scene.add.text(x + 60, y + 30, gameState.spriteScale.toFixed(1) + 'x', {
-                fontSize: '16px',
-                fill: '#00ff00',
-                fontFamily: 'Arial'
-            });
-            sizeControlsGroup.add(scaleText);
-            
-            // Increase button
-            const increaseBtn = scene.add.text(x + 120, y + 30, '[+]', {
-                fontSize: '20px',
-                fill: '#00ff00',
-                fontFamily: 'Arial',
-                backgroundColor: '#333333',
-                padding: { x: 10, y: 5 }
-            });
-            increaseBtn.setInteractive();
-            increaseBtn.on('pointerdown', () => {
-                if (gameState.spriteScale < 2.5) {
-                    gameState.spriteScale += 0.1;
-                    scaleText.setText((gameState.spriteScale).toFixed(1) + 'x');
-                    // Update all sprites in the scene if they exist
-                    scene.updateAllSpriteSizes && scene.updateAllSpriteSizes();
-                }
-            });
-            sizeControlsGroup.add(increaseBtn);
-            
-            return sizeControlsGroup;
         }
 
         // Main Menu Scene
@@ -284,49 +223,90 @@
                     fontFamily: 'Arial'
                 }).setOrigin(0.5);
 
+                // Sprite size adjustment (moved to top for easy access)
+                this.add.text(512, 180, 'Karakter Boyutu (Character Size):', {
+                    fontSize: '20px',
+                    fill: '#ffff00',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+
+                const scaleText = this.add.text(512, 210, '1.0x', {
+                    fontSize: '24px',
+                    fill: '#00ff00',
+                    fontFamily: 'Arial',
+                    backgroundColor: '#333333',
+                    padding: { x: 15, y: 5 }
+                }).setOrigin(0.5);
+                scaleText.setInteractive();
+                scaleText.on('pointerdown', () => {
+                    gameState.spriteScale += 0.2;
+                    if (gameState.spriteScale > 2.0) {
+                        gameState.spriteScale = 0.6;
+                    }
+                    scaleText.setText(gameState.spriteScale.toFixed(1) + 'x');
+                });
+                scaleText.on('pointerover', () => scaleText.setTint(0xcccccc));
+                scaleText.on('pointerout', () => scaleText.clearTint());
+
                 // Color selection area
-                this.add.text(512, 200, 'Choose Your Colors', {
+                this.add.text(512, 280, 'Renklerini Seç (Choose Your Colors)', {
                     fontSize: '24px',
                     fill: '#ffffff',
                     fontFamily: 'Arial'
                 }).setOrigin(0.5);
 
                 // Body color selection
-                this.add.text(300, 300, 'Vücut Rengi:', {
+                this.add.text(300, 350, 'Vücut Rengi (Body Color):', {
                     fontSize: '20px',
                     fill: '#ffffff',
                     fontFamily: 'Arial'
                 });
 
-                const bodyColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffa500, 0x800080, 0xffc0cb, 0x90ee90];
+                const bodyColors = [
+                    0xff0000, // Kırmızı (Red)
+                    0x00ff00, // Yeşil (Green)
+                    0x0000ff, // Mavi (Blue)
+                    0xffff00, // Sarı (Yellow)
+                    0xff00ff, // Pembe (Pink/Magenta)
+                    0x00ffff, // Cyan
+                    0xffa500, // Turuncu (Orange)
+                    0x800080  // Mor (Purple)
+                ];
+                const colorNames = ['Kırmızı', 'Yeşil', 'Mavi', 'Sarı', 'Pembe', 'Cyan', 'Turuncu', 'Mor'];
                 let currentBodyColor = 1; // Start with green
                 
-                const bodyColorPreview = this.add.circle(500, 300, 30, bodyColors[currentBodyColor]);
+                const bodyColorPreview = this.add.circle(500, 350, 30, bodyColors[currentBodyColor]);
+                const colorNameText = this.add.text(550, 350, colorNames[currentBodyColor], {
+                    fontSize: '16px',
+                    fill: '#ffffff',
+                    fontFamily: 'Arial'
+                }).setOrigin(0, 0.5);
+                
                 bodyColorPreview.setInteractive();
                 bodyColorPreview.on('pointerdown', () => {
                     currentBodyColor = (currentBodyColor + 1) % bodyColors.length;
                     bodyColorPreview.fillColor = bodyColors[currentBodyColor];
+                    colorNameText.setText(colorNames[currentBodyColor]);
                     gameState.playerColor = bodyColors[currentBodyColor];
                     // Automatically set darker backpack color
                     gameState.backpackColor = darkenColor(gameState.playerColor);
                     backpackColorPreview.fillColor = gameState.backpackColor;
                 });
+                bodyColorPreview.on('pointerover', () => bodyColorPreview.setAlpha(0.8));
+                bodyColorPreview.on('pointerout', () => bodyColorPreview.setAlpha(1));
 
                 // Backpack color preview (automatic, not interactive)
-                this.add.text(300, 380, 'Sırt Çantası: (Otomatik)', {
+                this.add.text(300, 420, 'Çanta Rengi (Backpack): Otomatik', {
                     fontSize: '20px',
                     fill: '#ffffff',
                     fontFamily: 'Arial'
                 });
 
-                const backpackColorPreview = this.add.circle(500, 380, 30, darkenColor(bodyColors[currentBodyColor]));
+                const backpackColorPreview = this.add.circle(500, 420, 30, darkenColor(bodyColors[currentBodyColor]));
                 // No interaction - automatically matches body color
 
-                // Size controls
-                createSizeControls(this, 300, 460);
-
                 // Start button
-                const startButton = this.add.image(512, 600, 'start_button');
+                const startButton = this.add.image(512, 550, 'start_button');
                 startButton.setInteractive();
                 startButton.setScale(0.8);
                 startButton.on('pointerdown', () => {
@@ -366,7 +346,7 @@
 
             preload() {
                 // Load dropship assets
-                this.load.image('dropship', 'assets/Dropship.png');
+                this.load.image('dropship', 'assets/dropship.png');
                 this.load.image('character_lobby', 'assets/character/lobby.png');
                 this.load.image('character_idle', 'assets/character/idle.png');
                 this.load.image('character_walk', 'assets/character/walk.png');
@@ -391,16 +371,6 @@
                 this.player.setTint(gameState.playerColor);
                 adjustSpriteSize(this.player, gameState.spriteScale);
                 
-                // Add size update function to this scene
-                this.updateAllSpriteSizes = () => {
-                    if (this.player) {
-                        adjustSpriteSize(this.player, gameState.spriteScale);
-                    }
-                };
-                
-                // Add size controls
-                createSizeControls(this, 50, 50);
-                
                 // Player name above character
                 this.playerNameText = this.add.text(this.player.x, this.player.y - 50, gameState.playerName, {
                     fontSize: '16px',
@@ -415,8 +385,8 @@
                     
                     // Create walk animation
                     this.anims.create({
-                        key: 'walk_anim',
-                        frames: this.anims.generateFrameNumbers('character_walk', { start: 0, end: 11 }), // 12 frame var görüntüde
+                        key: 'walk',
+                        frames: this.anims.generateFrameNumbers('character_walk', { start: 0, end: 11 }), // 12 frames total (0-11)
                         frameRate: 12,
                         repeat: -1
                     });
@@ -521,14 +491,16 @@
                     
                     // Change to walk animation
                     if (this.player.anims && !this.isInSeat) {
-                        this.player.play('walk_anim', true); // true = ignore if already playing
+                        if (this.player.anims.currentAnim?.key !== 'walk') {
+                            this.player.play('walk', true);
+                        }
                     }
                 } else {
                     this.player.setVelocity(0, 0);
                     if (!this.isInSeat) {
-                        this.player.setTexture('character_idle');
-                        if (this.player.anims) {
-                            this.player.stop();
+                        if (this.player.texture.key !== 'character_idle') {
+                            this.player.setTexture('character_idle');
+                            this.player.anims.stop();
                         }
                     }
                 }
@@ -541,9 +513,9 @@
                 
                 if (!this.isInSeat) {
                     this.player.setVelocity(0, 0);
-                    this.player.setTexture('character_idle');
-                    if (this.player.anims) {
-                        this.player.stop();
+                    if (this.player.texture.key !== 'character_idle') {
+                        this.player.setTexture('character_idle');
+                        this.player.anims.stop();
                     }
                 }
             }
@@ -689,8 +661,8 @@
                 
                 // Load walk sprite sheet
                 this.load.spritesheet('character_walk', 'assets/character/walk.png', {
-                    frameWidth: 128, // Sprite sheet frame boyutu
-                    frameHeight: 128
+                    frameWidth: 64, // Adjust based on your sprite sheet dimensions
+                    frameHeight: 64
                 });
                 
                 this.load.image('character_death', 'assets/character/death.png');
@@ -722,8 +694,8 @@
 
                 // Create walk animation
                 this.anims.create({
-                    key: 'walk_anim',
-                    frames: this.anims.generateFrameNumbers('character_walk', { start: 0, end: 11 }), // 12 frame
+                    key: 'walk',
+                    frames: this.anims.generateFrameNumbers('character_walk', { start: 0, end: 11 }), // 12 frames total
                     frameRate: 12,
                     repeat: -1
                 });
@@ -733,21 +705,6 @@
 
                 // Create UI
                 this.createUI();
-                
-                // Add size controls to Map Scene
-                createSizeControls(this, 20, 20);
-                
-                // Add size update function
-                this.updateAllSpriteSizes = () => {
-                    if (this.player) {
-                        adjustSpriteSize(this.player, gameState.spriteScale);
-                    }
-                    for (let ai of this.aiPlayers) {
-                        if (ai.sprite) {
-                            adjustSpriteSize(ai.sprite, gameState.spriteScale);
-                        }
-                    }
-                };
 
                 // Mobile joystick controls
                 this.setupMobileControls();
@@ -939,15 +896,17 @@
                     );
                     
                     // Change to walk animation (unless dead/ghost)
-                    if (!gameState.isDead && !gameState.isGhost) {
-                        this.player.play('walk_anim', true); // true = ignore if already playing
+                    if (!gameState.isDead) {
+                        if (this.player.anims.currentAnim?.key !== 'walk') {
+                            this.player.play('walk', true);
+                        }
                     }
                 } else {
                     this.player.setVelocity(0, 0);
-                    if (!gameState.isDead && !gameState.isGhost) {
-                        this.player.setTexture('character_idle');
-                        if (this.player.anims) {
-                            this.player.stop();
+                    if (!gameState.isDead) {
+                        if (this.player.texture.key !== 'character_idle') {
+                            this.player.setTexture('character_idle');
+                            this.player.anims.stop();
                         }
                     }
                 }
@@ -963,9 +922,9 @@
                 
                 if (!gameState.isDead) {
                     this.player.setVelocity(0, 0);
-                    this.player.setTexture(gameState.isGhost ? 'character_ghost' : 'character_idle');
-                    if (this.player.anims && !gameState.isGhost) {
-                        this.player.stop();
+                    if (this.player.texture.key !== 'character_idle' && !gameState.isGhost) {
+                        this.player.setTexture('character_idle');
+                        this.player.anims.stop();
                     }
                 }
 
@@ -989,15 +948,19 @@
                 
                 // Move towards target
                 this.physics.moveToObject(ai.sprite, { x: newX, y: newY }, 80);
-                ai.sprite.play('walk_anim', true);
+                if (ai.sprite.anims.currentAnim?.key !== 'walk') {
+                    ai.sprite.play('walk', true);
+                }
                 
                 // Stop moving after reaching target
                 this.time.delayedCall(1500, () => {
                     ai.sprite.setVelocity(0, 0);
                     ai.isMoving = false;
                     if (!ai.isDead) {
-                        ai.sprite.setTexture('character_idle');
-                        ai.sprite.stop();
+                        if (ai.sprite.texture.key !== 'character_idle') {
+                            ai.sprite.setTexture('character_idle');
+                            ai.sprite.anims.stop();
+                        }
                     }
                 });
             }
